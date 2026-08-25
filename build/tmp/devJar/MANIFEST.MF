@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Specification-Title: yawning_neko_api
+Specification-Vendor: -Yawningåµåµå­-
+Specification-Version: 1
+Implementation-Title: yawningnekoapi
+Implementation-Version: 1.0.0
+Implementation-Vendor: -Yawningåµåµå­-
+Implementation-Timestamp: 2026-08-05T07:55:45+0800
+

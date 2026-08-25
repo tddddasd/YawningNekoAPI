@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Specification-Title: yawning_neko_api
+Specification-Vendor: -Yawning Neko
+Specification-Version: 1
+Implementation-Title: yawningnekoapi
+Implementation-Version: 1.0.5
+Implementation-Vendor: -Yawning Neko
+Implementation-Timestamp: 2026-08-25T20:12:57+0800
+MixinConfigs: yawning_neko_api.mixins.json
+

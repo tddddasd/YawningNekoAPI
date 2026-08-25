@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT License"
+
+[[mods]]
+modId = "yawning_neko_api"
+version = "1.0.5"
+displayName = "Yawning Neko API"
+displayURL = "https://space.bilibili.com/1446970336"
+logoFile="yawning_neko_api_icon.png"
+authors = "-Yawning喵喵�?-"
+description = '''An Yawning Neko API for personal use.'''
+
+[[dependencies.yawning_neko_api]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.yawning_neko_api]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1]"
+ordering = "NONE"
+side = "BOTH"
