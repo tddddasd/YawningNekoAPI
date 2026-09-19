@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -125,19 +125,20 @@ public class EntityAttackEffectManager implements ResourceManagerReloadListener 
     }
 
     public static int getMaxUpgradeLevel(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         EntityAttackConfig config = ENTITY_ATTACK_CONFIGS.get(entityId);
         return config != null ? config.getMaxUpgradeLevel() : 0;
     }
 
     public static int getMaxEffectLevel(Mob entity, String effectId) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         EntityAttackConfig config = ENTITY_ATTACK_CONFIGS.get(entityId);
         return config != null ? config.getMaxEffectLevel(effectId) : 0;
     }
 
     public static List<AttackEffect> getAttackEffects(Mob entity, int upgradeLevel) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         return getAttackEffects(entityId, upgradeLevel);
     }
 
@@ -151,13 +152,13 @@ public class EntityAttackEffectManager implements ResourceManagerReloadListener 
     }
 
     public static List<AttackEffect> getBaseAttackEffects(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         EntityAttackConfig config = ENTITY_ATTACK_CONFIGS.get(entityId);
         return config != null ? config.getBaseEffects() : new ArrayList<>();
     }
 
     public static boolean hasAttackEffects(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         return ENTITY_ATTACK_CONFIGS.containsKey(entityId);
     }
 
@@ -277,7 +278,7 @@ public class EntityAttackEffectManager implements ResourceManagerReloadListener 
         }
 
         public static List<AttackEffect> getAttackEffects(Mob entity, int upgradeLevel) {
-            String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+            String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
             EntityAttackConfig config = ENTITY_ATTACK_CONFIGS.get(entityId);
             if (config == null) {
                 return new ArrayList<>();

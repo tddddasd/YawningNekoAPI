@@ -3,10 +3,9 @@ package org.tdddd.yawning_neko_api.data;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import org.tdddd.yawning_neko_api.Yawning_neko_api;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,7 +14,7 @@ import java.util.Map;
 
 public class EntityAdaptationMapping implements ResourceManagerReloadListener {
     private static final Gson GSON = new Gson();
-    private static final Map<ResourceLocation, ResourceLocation> ENTITY_TO_CONFIG_MAP = new HashMap<>();
+    private static final Map<Identifier, Identifier> ENTITY_TO_CONFIG_MAP = new HashMap<>();
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
@@ -37,7 +36,7 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String entityKey = entry.getKey();
             JsonElement configElement = entry.getValue();
-            ResourceLocation entityId = ResourceLocation.tryParse(entityKey);
+            Identifier entityId = Identifier.tryParse(entityKey);
             if (entityId == null) {
                 continue;
             }
@@ -56,11 +55,11 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
                 continue;
             }
 
-            ResourceLocation configId;
+            Identifier configId;
             if (configName.contains(":")) {
-                configId = ResourceLocation.tryParse(configName);
+                configId = Identifier.tryParse(configName);
             } else {
-                configId = new ResourceLocation(sourceNamespace, configName);
+                configId = Identifier.fromNamespaceAndPath(sourceNamespace, configName);
             }
             if (configId == null) {
                 continue;
@@ -70,11 +69,11 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
         }
     }
 
-    public static ResourceLocation getConfigForEntity(ResourceLocation entityId) {
+    public static Identifier getConfigForEntity(Identifier entityId) {
         return ENTITY_TO_CONFIG_MAP.get(entityId);
     }
 
-    public static boolean hasMapping(ResourceLocation entityId) {
+    public static boolean hasMapping(Identifier entityId) {
         return ENTITY_TO_CONFIG_MAP.containsKey(entityId);
     }
 }

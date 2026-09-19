@@ -1,9 +1,11 @@
 package org.tdddd.yawning_neko_api.data;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
@@ -11,27 +13,27 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import org.joml.Vector3f;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import org.tdddd.yawning_neko_api.Yawning_neko_api;
 import org.tdddd.yawning_neko_api.events.AdaptationEffectEvent;
+import org.tdddd.yawning_neko_api.events.CapabilityEventHandler;
 import org.tdddd.yawning_neko_api.network.ModNetwork;
 import org.tdddd.yawning_neko_api.network.packet.AdaptationDataSyncPacket;
 import org.tdddd.yawning_neko_api.network.packet.AdaptationEventSyncPacket;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 
-@Mod.EventBusSubscriber(modid = Yawning_neko_api.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = Yawning_neko_api.MODID)
 public class DamageAdaptation {
     private static final WeakHashMap<LivingEntity, Long> spawnTimeMap = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Long> lastHurtTimeMap = new WeakHashMap<>();
@@ -48,8 +50,13 @@ public class DamageAdaptation {
 
     private static final WeakHashMap<LivingEntity, Integer> clientMaxAdaptations = new WeakHashMap<>();
 
+    /** 26.1.2 数据附件读取：始终返回对象（缺失时创建默认值），取代原 getCapability(...).orElse(null)。 */
+    private static IAdaptationData attachmentData(LivingEntity entity) {
+        return entity.getData(CapabilityEventHandler.ADAPTATION_DATA);
+    }
+
     private static String damageTypeKeyToString(Object key) {
-        if (key instanceof ResourceLocation loc) {
+        if (key instanceof Identifier loc) {
             return loc.toString();
         } else if (key instanceof TagKey<?> tag) {
             return "#" + tag.location().toString();
@@ -61,22 +68,17 @@ public class DamageAdaptation {
         if (str == null) return null;
         if (str.startsWith("#")) {
             String tagName = str.substring(1);
-            return TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(tagName));
+            return TagKey.create(Registries.DAMAGE_TYPE, Identifier.parse(tagName));
         } else {
-            return new ResourceLocation(str);
+            return Identifier.parse(str);
         }
     }
 
-    @SubscribeEvent
-    public static void attachCapability(AttachCapabilitiesEvent<net.minecraft.world.entity.Entity> event) {
-        if (event.getObject() instanceof LivingEntity) {
-            event.addCapability(new ResourceLocation(Yawning_neko_api.MODID, "adaptation"),
-                    new AdaptationDataCapability.Provider());
-        }
-    }
+    // 原 1.20.1 的 attachCapability(AttachCapabilitiesEvent<Entity>) 已删除：
+    // 数据附件在 CapabilityEventHandler 里统一注册，不需要逐实体附加事件。
 
     public static DamageAdaptationConfig getEntityConfig(LivingEntity entity) {
-        if (entity.level().isClientSide) return null;
+        if (entity.level().isClientSide()) return null;
         return AdaptationConfigResolver.getConfig(entity);
     }
 
@@ -105,26 +107,24 @@ public class DamageAdaptation {
     }
 
     public static boolean isInBrokenAdaptation(LivingEntity entity) {
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
-        if (data == null) return false;
+        IAdaptationData data = attachmentData(entity);
         return data.isInBrokenAdaptation(entity.level().getGameTime());
     }
 
     public static float getRemainingBrokenAdaptationTime(LivingEntity entity) {
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
-        if (data == null) return 0;
+        IAdaptationData data = attachmentData(entity);
         long currentTick = entity.level().getGameTime();
         long remaining = Math.max(0, data.getBrokenAdaptationEndTick() - currentTick);
         return remaining / 20.0f;
     }
 
     public static int getDeathCount(LivingEntity entity) {
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+        IAdaptationData data = attachmentData(entity);
         return data == null ? 0 : data.getDeathCount();
     }
 
     public static void recordDeath(LivingEntity entity) {
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+        IAdaptationData data = attachmentData(entity);
         if (data != null) data.incrementDeathCount();
     }
 
@@ -139,15 +139,16 @@ public class DamageAdaptation {
     }
 
     private static Object getDamageTypeKey(LivingEntity entity, DamageType damageType, DamageAdaptationConfig config) {
-        ResourceLocation damageTypeId = entity.level().registryAccess()
-                .registryOrThrow(Registries.DAMAGE_TYPE).getKey(damageType);
+        // 原 registryAccess().registryOrThrow(...) -> lookupOrThrow(...)
+        Registry<DamageType> registry = entity.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE);
+        Identifier damageTypeId = registry.getKey(damageType);
         if (damageTypeId == null) return null;
 
-        var registry = entity.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE);
-        var holder = registry.getHolder(ResourceKey.create(Registries.DAMAGE_TYPE, damageTypeId));
+        // 原 registry.getHolder(ResourceKey) 在 26.1.2 中改为 registry.get(Identifier)
+        Optional<Holder.Reference<DamageType>> holder = registry.get(damageTypeId);
 
         for (Object key : config.getDamageMultipliers().keySet()) {
-            if (key instanceof ResourceLocation loc && damageTypeId.equals(loc)) {
+            if (key instanceof Identifier loc && damageTypeId.equals(loc)) {
                 return key;
             } else if (key instanceof TagKey<?> tag && holder.isPresent() && holder.get().is((TagKey<DamageType>) tag)) {
                 return key;
@@ -156,8 +157,13 @@ public class DamageAdaptation {
         return damageTypeId;
     }
 
+    /**
+     * 原 1.20.1 监听 {@code LivingHurtEvent}；
+     * 26.1.2 对应 {@link LivingIncomingDamageEvent}（伤害仍可通过 {@code getAmount/setAmount} 调整，
+     * 取消事件则完全抵消这次伤害）。
+     */
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         LivingEntity entity = event.getEntity();
         DamageAdaptationConfig config = getEntityConfig(entity);
 
@@ -177,7 +183,7 @@ public class DamageAdaptation {
         boolean shouldTriggerBroken = false;
         if (multipliedDamage > 0 && damageTypeKey != null && config.shouldTriggerBrokenAdaptation(damageTypeKey, multipliedDamage)) {
             shouldTriggerBroken = true;
-            IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+            IAdaptationData data = attachmentData(entity);
             if (data != null) {
                 long durationTicks = (long) (config.getBrokenAdaptationDuration() * 20);
                 data.setBrokenAdaptationEndTick(entity.level().getGameTime() + durationTicks);
@@ -212,7 +218,7 @@ public class DamageAdaptation {
     }
 
     public static int getLastAdaptationEventType(LivingEntity entity) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             Long expireTick = clientEventExpireTick.get(entity);
             if (expireTick == null) return 0;
             if (entity.level().getGameTime() > expireTick) {
@@ -236,15 +242,15 @@ public class DamageAdaptation {
     private static void setLastAdaptationEventType(LivingEntity entity, int type) {
         lastAdaptationEventType.put(entity, type);
         lastAdaptationEventTime.put(entity, entity.level().getGameTime());
-        if (!entity.level().isClientSide) {
+        if (!entity.level().isClientSide()) {
             ModNetwork.sendToAllTracking(new AdaptationEventSyncPacket(entity.getId(), type), entity);
         }
     }
 
     private static void processDamageAdaptation(LivingEntity entity, DamageAdaptationConfig config,
-                                                LivingHurtEvent event, float currentDamage,
+                                                LivingIncomingDamageEvent event, float currentDamage,
                                                 boolean isBrokenTriggered, Object damageTypeKey) {
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+        IAdaptationData data = attachmentData(entity);
         if (data == null) return;
 
         long currentTick = entity.level().getGameTime();
@@ -273,13 +279,14 @@ public class DamageAdaptation {
         float finalDamage = currentDamage * reduction;
         event.setAmount(finalDamage);
 
-        if (!entity.level().isClientSide) {
+        if (!entity.level().isClientSide()) {
             int maxAdapt = data.getMaxAdaptations();
             if (newAdapt >= maxAdapt) {
-                MinecraftForge.EVENT_BUS.post(new AdaptationEffectEvent(entity, AdaptationEffectEvent.Type.FULL_ADAPTATION));
+                // MinecraftForge.EVENT_BUS -> NeoForge.EVENT_BUS
+                NeoForge.EVENT_BUS.post(new AdaptationEffectEvent(entity, AdaptationEffectEvent.Type.FULL_ADAPTATION));
                 setLastAdaptationEventType(entity, 2);
             } else if (newAdapt > oldAdapt) {
-                MinecraftForge.EVENT_BUS.post(new AdaptationEffectEvent(entity, AdaptationEffectEvent.Type.PARTIAL_ADAPTATION));
+                NeoForge.EVENT_BUS.post(new AdaptationEffectEvent(entity, AdaptationEffectEvent.Type.PARTIAL_ADAPTATION));
                 setLastAdaptationEventType(entity, 1);
             }
         }
@@ -307,7 +314,7 @@ public class DamageAdaptation {
     }
 
     private static void scheduleDelayedHurtTime(LivingEntity entity) {
-        if (!entity.level().isClientSide) {
+        if (!entity.level().isClientSide()) {
             entity.level().getServer().execute(() -> {
                 if (entity.isAlive()) {
                     delayedHurtTimeMap.put(entity, entity.level().getGameTime());
@@ -325,7 +332,7 @@ public class DamageAdaptation {
         int minKills = config.getMinimumKillCount();
         if (minKills <= 0) return;
 
-        IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+        IAdaptationData data = attachmentData(entity);
         if (data == null) return;
 
         int currentDeaths = data.getDeathCount();
@@ -339,7 +346,7 @@ public class DamageAdaptation {
             spawnTimeMap.put(entity, currentTime);
 
             // 播放粒子效果（服务端）
-            if (!entity.level().isClientSide && entity.level() instanceof ServerLevel serverLevel) {
+            if (!entity.level().isClientSide() && entity.level() instanceof ServerLevel serverLevel) {
                 RandomSource random = entity.getRandom();
                 int count = 7 + random.nextInt(6);
                 AABB bb = entity.getBoundingBox();
@@ -347,7 +354,9 @@ public class DamageAdaptation {
                     double x = bb.minX + random.nextDouble() * (bb.maxX - bb.minX);
                     double y = bb.minY + random.nextDouble() * (bb.maxY - bb.minY);
                     double z = bb.minZ + random.nextDouble() * (bb.maxZ - bb.minZ);
-                    DustParticleOptions dust = new DustParticleOptions(new Vector3f(0.2F, 1.0F, 0.2F), 1.0F);
+                    // 原 1.20.1 用 new DustParticleOptions(new Vector3f(0.2F, 1.0F, 0.2F), 1.0F)；
+                    // 26.1.2 改为 RGB24 整数颜色：0x33FF33 == (0.2, 1.0, 0.2)
+                    DustParticleOptions dust = new DustParticleOptions(0x33FF33, 1.0F);
                     serverLevel.sendParticles(dust, x, y, z, 1, 0, 0, 0, 0.1);
                 }
             }
@@ -363,11 +372,10 @@ public class DamageAdaptation {
             DamageAdaptationConfig config = getEntityConfig(living);
             if (config != null) {
                 spawnTimeMap.put(living, living.level().getGameTime());
-                living.getCapability(IAdaptationData.CAPABILITY).ifPresent(data -> {
-                    if (data.getMaxAdaptations() == 0) {
-                        data.setMaxAdaptations(config.getMaxAdaptations());
-                    }
-                });
+                IAdaptationData data = attachmentData(living);
+                if (data.getMaxAdaptations() == 0) {
+                    data.setMaxAdaptations(config.getMaxAdaptations());
+                }
             }
         }
     }
@@ -392,13 +400,13 @@ public class DamageAdaptation {
     }
 
     private static void syncAdaptationData(LivingEntity entity, String damageTypeKeyStr, int level, int maxAdaptations) {
-        if (!entity.level().isClientSide) {
+        if (!entity.level().isClientSide()) {
             ModNetwork.sendToAllTracking(new AdaptationDataSyncPacket(entity.getId(), level, damageTypeKeyStr, maxAdaptations), entity);
         }
     }
 
     public static void updateClientAdaptationData(LivingEntity entity, int adaptationLevel, String damageTypeKeyStr, int maxAdaptations) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             Map<String, Integer> entityMap = clientAdaptationData.computeIfAbsent(entity, k -> new HashMap<>());
             entityMap.put(damageTypeKeyStr, adaptationLevel);
             clientLastDamageTypeKey.put(entity, damageTypeKeyStr);
@@ -416,14 +424,14 @@ public class DamageAdaptation {
     }
 
     public static int getClientMaxAdaptations(LivingEntity entity) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             return clientMaxAdaptations.getOrDefault(entity, 0);
         }
         return 0;
     }
 
     public static void updateClientAdaptationEvent(LivingEntity entity, int eventType) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             long expireTick = entity.level().getGameTime() + 10; // 持续10刻
             clientEventExpireTick.put(entity, expireTick);
             clientEventType.put(entity, eventType);
@@ -431,7 +439,7 @@ public class DamageAdaptation {
     }
 
     private static int getAdaptationDataInternal(LivingEntity entity) {
-        if (entity.level().isClientSide) {
+        if (entity.level().isClientSide()) {
             String lastKey = clientLastDamageTypeKey.get(entity);
             if (lastKey != null) {
                 Boolean adaptable = clientLastDamageTypeAdaptable.get(entity);
@@ -443,7 +451,7 @@ public class DamageAdaptation {
         } else {
             String lastKey = serverLastDamageTypeKey.get(entity);
             if (lastKey != null) {
-                IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
+                IAdaptationData data = attachmentData(entity);
                 if (data != null) {
                     return data.getAdaptationLevel(lastKey);
                 }
@@ -460,10 +468,12 @@ public class DamageAdaptation {
         return getAdaptationData(entity) > 0 && entity.hurtTime > 0;
     }
 
+    // 原 1.20.1：AddReloadListenerEvent#addListener(listener)
+    // 26.1.2：AddServerReloadListenersEvent，且需要给每个监听器一个唯一 Identifier key
     @SubscribeEvent
-    public static void onAddReloadListeners(AddReloadListenerEvent event) {
-        event.addListener(new DamageAdaptationManager());
-        event.addListener(new EntityAdaptationMapping());
-        event.addListener(new AdaptationPriorityRuleLoader());
+    public static void onAddReloadListeners(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(Yawning_neko_api.MODID, "damage_adaptation_configs"), new DamageAdaptationManager());
+        event.addListener(Identifier.fromNamespaceAndPath(Yawning_neko_api.MODID, "entity_adaptation_mappings"), new EntityAdaptationMapping());
+        event.addListener(Identifier.fromNamespaceAndPath(Yawning_neko_api.MODID, "adaptation_rules"), new AdaptationPriorityRuleLoader());
     }
 }

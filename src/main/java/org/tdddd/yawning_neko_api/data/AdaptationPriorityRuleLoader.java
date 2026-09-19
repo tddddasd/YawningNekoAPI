@@ -1,13 +1,13 @@
 package org.tdddd.yawning_neko_api.data;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
@@ -20,7 +20,7 @@ import com.google.gson.JsonSyntaxException;
 public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListener {
     private static final Gson GSON = new Gson();
     private static final List<PriorityRule> RULES = new ArrayList<>();
-    private static final Map<ResourceLocation, Map<ResourceLocation, ResourceLocation>> MAPPING_CACHE = new HashMap<>();
+    private static final Map<Identifier, Map<Identifier, Identifier>> MAPPING_CACHE = new HashMap<>();
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
@@ -51,19 +51,19 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
                 String path = id.getPath();
                 String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-                ResourceLocation mappingId = new ResourceLocation(id.getNamespace(), fileName);
-                Map<ResourceLocation, ResourceLocation> entityToConfig = new HashMap<>();
+                Identifier mappingId = Identifier.fromNamespaceAndPath(id.getNamespace(), fileName);
+                Map<Identifier, Identifier> entityToConfig = new HashMap<>();
 
                 for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
                     String entityKey = entry.getKey();
                     JsonElement configElement = entry.getValue();
-                    ResourceLocation entityId = ResourceLocation.tryParse(entityKey);
+                    Identifier entityId = Identifier.tryParse(entityKey);
                     if (entityId == null) continue;
-                    ResourceLocation configId = null;
+                    Identifier configId = null;
                     if (configElement.isJsonPrimitive() && configElement.getAsJsonPrimitive().isString()) {
-                        configId = ResourceLocation.tryParse(configElement.getAsString());
+                        configId = Identifier.tryParse(configElement.getAsString());
                     } else if (configElement.isJsonObject() && configElement.getAsJsonObject().has("config")) {
-                        configId = ResourceLocation.tryParse(configElement.getAsJsonObject().get("config").getAsString());
+                        configId = Identifier.tryParse(configElement.getAsJsonObject().get("config").getAsString());
                     }
                     if (configId != null) {
                         entityToConfig.put(entityId, configId);
@@ -102,8 +102,8 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
 
     private static boolean conditionsConflict(Condition a, Condition b) {
         if (a == null || b == null) return true;
-        Set<ResourceLocation> aTypes = a.entityTypes;
-        Set<ResourceLocation> bTypes = b.entityTypes;
+        Set<Identifier> aTypes = a.entityTypes;
+        Set<Identifier> bTypes = b.entityTypes;
         if (aTypes != null && bTypes != null && Collections.disjoint(aTypes, bTypes)) {
             return false;
         }
@@ -115,14 +115,14 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
         return true;
     }
 
-    public static ResourceLocation resolveConfigId(LivingEntity entity, Level level) {
+    public static Identifier resolveConfigId(LivingEntity entity, Level level) {
         for (PriorityRule rule : RULES) {
             if (rule.matches(entity, level)) {
                 if (rule.mappingId != null) {
-                    Map<ResourceLocation, ResourceLocation> mapping = MAPPING_CACHE.get(rule.mappingId);
+                    Map<Identifier, Identifier> mapping = MAPPING_CACHE.get(rule.mappingId);
                     if (mapping != null) {
-                        ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
-                        ResourceLocation configId = mapping.get(entityId);
+                        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                        Identifier configId = mapping.get(entityId);
                         if (configId != null) {
                             return configId;
                         }
@@ -138,10 +138,10 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
     public static class PriorityRule {
         public final int priority;
         public final Condition condition;
-        public final ResourceLocation configId;
-        public final ResourceLocation mappingId;
+        public final Identifier configId;
+        public final Identifier mappingId;
 
-        private PriorityRule(int priority, Condition condition, ResourceLocation configId, ResourceLocation mappingId) {
+        private PriorityRule(int priority, Condition condition, Identifier configId, Identifier mappingId) {
             this.priority = priority;
             this.condition = condition;
             this.configId = configId;
@@ -156,13 +156,13 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
             int priority = obj.get("priority").getAsInt();
             JsonObject condObj = obj.getAsJsonObject("condition");
             Condition condition = Condition.fromJson(condObj);
-            ResourceLocation configId = null;
-            ResourceLocation mappingId = null;
+            Identifier configId = null;
+            Identifier mappingId = null;
             if (obj.has("config")) {
-                configId = ResourceLocation.tryParse(obj.get("config").getAsString());
+                configId = Identifier.tryParse(obj.get("config").getAsString());
             }
             if (obj.has("mapping")) {
-                mappingId = ResourceLocation.tryParse(obj.get("mapping").getAsString());
+                mappingId = Identifier.tryParse(obj.get("mapping").getAsString());
             }
             if (configId == null && mappingId == null) {
                 throw new JsonSyntaxException("Rule must have either 'config' or 'mapping'");
@@ -172,11 +172,11 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
     }
 
     private static class Condition {
-        final Set<ResourceLocation> entityTypes;
+        final Set<Identifier> entityTypes;
         final Set<ResourceKey<Level>> dimensions;
         final String namePattern;
 
-        Condition(Set<ResourceLocation> entityTypes, Set<ResourceKey<Level>> dimensions,
+        Condition(Set<Identifier> entityTypes, Set<ResourceKey<Level>> dimensions,
                   String namePattern) {
             this.entityTypes = entityTypes;
             this.dimensions = dimensions;
@@ -185,7 +185,7 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
 
         boolean matches(LivingEntity entity, Level level) {
             if (entityTypes != null && !entityTypes.isEmpty()) {
-                ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+                Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
                 if (!entityTypes.contains(typeId)) return false;
             }
             if (dimensions != null && !dimensions.isEmpty()) {
@@ -200,15 +200,15 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
         }
 
         static Condition fromJson(JsonObject obj) {
-            Set<ResourceLocation> types = null;
+            Set<Identifier> types = null;
             if (obj.has("entity_type")) {
                 types = new HashSet<>();
                 JsonElement elem = obj.get("entity_type");
                 if (elem.isJsonArray()) {
                     for (JsonElement e : elem.getAsJsonArray())
-                        types.add(ResourceLocation.tryParse(e.getAsString()));
+                        types.add(Identifier.tryParse(e.getAsString()));
                 } else {
-                    types.add(ResourceLocation.tryParse(elem.getAsString()));
+                    types.add(Identifier.tryParse(elem.getAsString()));
                 }
             }
             Set<ResourceKey<Level>> dims = null;
@@ -217,9 +217,9 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
                 JsonElement elem = obj.get("dimension");
                 if (elem.isJsonArray()) {
                     for (JsonElement e : elem.getAsJsonArray())
-                        dims.add(ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(e.getAsString())));
+                        dims.add(ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(e.getAsString())));
                 } else {
-                    dims.add(ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(elem.getAsString())));
+                    dims.add(ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(elem.getAsString())));
                 }
             }
             String namePattern = obj.has("name_pattern") ? obj.get("name_pattern").getAsString() : null;

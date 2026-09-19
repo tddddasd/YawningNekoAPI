@@ -1,11 +1,11 @@
 package org.tdddd.yawning_neko_api.data;
 
 import com.google.gson.*;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -87,18 +87,19 @@ public class EntityImmunityEffectManager implements ResourceManagerReloadListene
     }
 
     public static boolean isImmune(LivingEntity entity, String effectId) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         List<String> immunities = ENTITY_IMMUNITIES.get(entityId);
         return immunities != null && immunities.contains(effectId);
     }
 
     public static List<String> getImmunities(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         return ENTITY_IMMUNITIES.getOrDefault(entityId, Collections.emptyList());
     }
 
     public static boolean hasImmunities(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         return ENTITY_IMMUNITIES.containsKey(entityId);
     }
 

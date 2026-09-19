@@ -2,11 +2,11 @@ package org.tdddd.yawning_neko_api.data;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.tdddd.yawning_neko_api.Yawning_neko_api;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class DamageAdaptationManager implements ResourceManagerReloadListener {
     private static final Gson GSON = new Gson();
-    private static final Map<ResourceLocation, DamageAdaptationConfig> CONFIGS = new HashMap<>();
+    private static final Map<Identifier, DamageAdaptationConfig> CONFIGS = new HashMap<>();
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
@@ -27,30 +27,31 @@ public class DamageAdaptationManager implements ResourceManagerReloadListener {
                         JsonObject json = GSON.fromJson(new InputStreamReader(stream), JsonObject.class);
                         String path = resourceLocation.getPath();
                         String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-                        ResourceLocation configId = new ResourceLocation(resourceLocation.getNamespace(), fileName);
+                        Identifier configId = Identifier.fromNamespaceAndPath(resourceLocation.getNamespace(), fileName);
                         DamageAdaptationConfig config = DamageAdaptationConfig.fromJson(json);
                         CONFIGS.put(configId, config);
                     } catch (Exception e) {
                     }
                 });
-        if (!FMLEnvironment.dist.isClient()) {
+        // 原 FMLEnvironment.dist.isClient() -> FMLEnvironment.getDist()
+        if (FMLEnvironment.getDist() != Dist.CLIENT) {
             AdaptationConfigResolver.refreshAllEntitiesConfig();
         }
     }
 
-    public static DamageAdaptationConfig getConfig(ResourceLocation entityId) {
+    public static DamageAdaptationConfig getConfig(Identifier entityId) {
         return CONFIGS.get(entityId);
     }
 
-    public static boolean hasConfig(ResourceLocation entityId) {
-        ResourceLocation configId = EntityAdaptationMapping.getConfigForEntity(entityId);
+    public static boolean hasConfig(Identifier entityId) {
+        Identifier configId = EntityAdaptationMapping.getConfigForEntity(entityId);
         if (configId != null) {
             return CONFIGS.containsKey(configId);
         }
         return CONFIGS.containsKey(entityId);
     }
 
-    public static DamageAdaptationConfig getDirectConfig(ResourceLocation configId) {
+    public static DamageAdaptationConfig getDirectConfig(Identifier configId) {
         return CONFIGS.get(configId);
     }
 }

@@ -5,17 +5,24 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import org.tdddd.yawning_neko_api.Yawning_neko_api;
 import org.tdddd.yawning_neko_api.data.MinimumDamageManager;
 
-@Mod.EventBusSubscriber
+/**
+ * 原 1.20.1 监听 {@code LivingAttackEvent}（发生在无敌帧检查之前）。
+ * 26.1.2 已移除 LivingAttackEvent，最接近的替代是
+ * {@link LivingIncomingDamageEvent}（发生在无敌帧检查之后、伤害结算之前）。
+ * 这里保留原有的“直接改血量 + 触发无敌帧”逻辑，不取消事件。
+ */
+@EventBusSubscriber(modid = Yawning_neko_api.MODID)
 public class MinimumDamageEventHandler {
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         LivingEntity target = event.getEntity();
         DamageSource source = event.getSource();
         LivingEntity attacker = getAttacker(source.getEntity());

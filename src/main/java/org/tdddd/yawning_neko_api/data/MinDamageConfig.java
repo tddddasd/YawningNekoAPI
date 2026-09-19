@@ -1,7 +1,9 @@
 package org.tdddd.yawning_neko_api.data;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
 
 public class MinDamageConfig {
