@@ -1,18 +1,25 @@
 package org.tdddd.yawning_neko_api.data;
 
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-import net.minecraftforge.common.util.LazyOptional;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.mojang.serialization.Codec;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 原 1.20.1 的 Forge Capability 实现（内含 {@code Provider implements ICapabilitySerializable<CompoundTag>}）。
+ *
+ * <p>26.1.2 数据附件不再需要 Provider：附件类型在
+ * {@link org.tdddd.yawning_neko_api.events.CapabilityEventHandler#ADAPTATION_DATA} 注册，
+ * 由 {@code IAttachmentHolder#getData/setData} 直接读写本对象；
+ * 持久化由 {@link net.neoforged.neoforge.attachment.AttachmentType#serializable}
+ * （基于 {@link net.neoforged.neoforge.common.util.ValueIOSerializable}）完成。
+ */
 public class AdaptationDataCapability implements IAdaptationData {
+    /** 伤害类型键 -> 适应层数。原 NBT 里是一个复合标签，ValueIO 下用 Codec 表达同样的字符串映射。 */
+    private static final Codec<Map<String, Integer>> ADAPTATIONS_CODEC = Codec.unboundedMap(Codec.STRING, Codec.INT);
+
     private final Map<String, Integer> adaptations = new HashMap<>();
     private int deathCount = 0;
     private String currentConfigId = "";
@@ -104,55 +111,30 @@ public class AdaptationDataCapability implements IAdaptationData {
     @Override
     public void setLastHurtTime(long tick) { this.lastHurtTime = tick; }
 
+    // 原 serializeNBT()/deserializeNBT() 的字段布局原样保留：
+    // adaptations / deathCount / configId / brokenEnd / maxAdaptations / lastDamageType。
     @Override
-    public CompoundTag serializeNBT() {
-        CompoundTag tag = new CompoundTag();
-        CompoundTag adaptTag = new CompoundTag();
-        adaptations.forEach((k, v) -> adaptTag.putInt(k, v));
-        tag.put("adaptations", adaptTag);
-        tag.putInt("deathCount", deathCount);
-        tag.putString("configId", currentConfigId);
-        tag.putLong("brokenEnd", brokenAdaptationEndTick);
-        tag.putInt("maxAdaptations", maxAdaptations);
+    public void serialize(ValueOutput output) {
+        output.store("adaptations", ADAPTATIONS_CODEC, adaptations);
+        output.putInt("deathCount", deathCount);
+        output.putString("configId", currentConfigId);
+        output.putLong("brokenEnd", brokenAdaptationEndTick);
+        output.putInt("maxAdaptations", maxAdaptations);
         if (lastDamagedType != null) {
-            tag.putString("lastDamageType", lastDamagedType);
+            output.putString("lastDamageType", lastDamagedType);
         }
-        if (tag.contains("lastDamageType")) {
-            lastDamagedType = tag.getString("lastDamageType");
-        } else {
-            lastDamagedType = null;
-        }
-        return tag;
     }
 
     @Override
-    public void deserializeNBT(CompoundTag tag) {
+    public void deserialize(ValueInput input) {
         adaptations.clear();
-        CompoundTag adaptTag = tag.getCompound("adaptations");
-        for (String key : adaptTag.getAllKeys()) {
-            adaptations.put(key, adaptTag.getInt(key));
-        }
-        deathCount = tag.getInt("deathCount");
-        currentConfigId = tag.getString("configId");
-        brokenAdaptationEndTick = tag.getLong("brokenEnd");
-        maxAdaptations = tag.getInt("maxAdaptations");
+        input.read("adaptations", ADAPTATIONS_CODEC).ifPresent(map -> adaptations.putAll(map));
+        deathCount = input.getIntOr("deathCount", 0);
+        currentConfigId = input.getStringOr("configId", "");
+        brokenAdaptationEndTick = input.getLongOr("brokenEnd", 0L);
+        maxAdaptations = input.getIntOr("maxAdaptations", 0);
         spawnTime = 0;
         lastHurtTime = 0;
-    }
-
-    public static class Provider implements ICapabilitySerializable<CompoundTag> {
-        private final IAdaptationData instance = new AdaptationDataCapability();
-        private final LazyOptional<IAdaptationData> lazyOptional = LazyOptional.of(() -> instance);
-
-        @Override
-        public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-            return CAPABILITY.orEmpty(cap, lazyOptional);
-        }
-
-        @Override
-        public CompoundTag serializeNBT() { return instance.serializeNBT(); }
-
-        @Override
-        public void deserializeNBT(CompoundTag nbt) { instance.deserializeNBT(nbt); }
+        // 与原 deserializeNBT 一致：lastDamagedType 不从存档恢复。
     }
 }

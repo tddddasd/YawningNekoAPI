@@ -1,13 +1,15 @@
 package org.tdddd.yawning_neko_api.events;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import org.tdddd.yawning_neko_api.data.EntityAttackEffectManager;
 import org.tdddd.yawning_neko_api.data.EntityUpgradeManager;
 
@@ -24,8 +26,9 @@ public class EntityAttackEffectHandler {
         }
     }
 
+    /** 原 1.20.1：{@code LivingDamageEvent}；26.1.2 拆分为 Pre/Post，这里对应结算后的 Post。 */
     @SubscribeEvent
-    public void onEntityAttack(LivingDamageEvent event) {
+    public void onEntityAttack(LivingDamageEvent.Post event) {
         if (event.getSource().getDirectEntity() instanceof Mob attacker) {
             LivingEntity target = event.getEntity();
             int currentLevel = EntityUpgradeManager.getEntityUpgradeLevel(attacker);
@@ -48,9 +51,10 @@ public class EntityAttackEffectHandler {
     }
 
     private void applyEffect(LivingEntity target, EntityAttackEffectManager.AttackEffect effectConfig) {
-        MobEffect mobEffect = ForgeRegistries.MOB_EFFECTS.getValue(
-                new net.minecraft.resources.ResourceLocation(effectConfig.getEffectId())
-        );
+        // 26.1.2：MobEffectInstance 需要 Holder<MobEffect>，因此从注册表取 Holder 而不是裸对象
+        Identifier effectKey = Identifier.tryParse(effectConfig.getEffectId());
+        if (effectKey == null) return;
+        Holder<MobEffect> mobEffect = BuiltInRegistries.MOB_EFFECT.get(effectKey).orElse(null);
 
         if (mobEffect != null) {
             int duration = effectConfig.getDuration();
@@ -73,7 +77,8 @@ public class EntityAttackEffectHandler {
 
     private boolean attemptPreAttackLevelUp(Mob attacker, List<EntityAttackEffectManager.AttackEffect> effects) {
         boolean upgraded = false;
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(attacker.getType()).toString();
+        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType()).toString();
         EntityUpgradeManager.UpgradeConfig config = EntityUpgradeManager.getUpgradeConfig(entityId);
 
         if (config == null) {

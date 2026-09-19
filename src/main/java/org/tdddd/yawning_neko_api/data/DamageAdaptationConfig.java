@@ -3,7 +3,7 @@ package org.tdddd.yawning_neko_api.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 
 import java.util.HashMap;
@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DamageAdaptationConfig {
+    /** 键既可能是 Identifier（具体伤害类型），也可能是 TagKey<DamageType>（# 标签）。 */
     private final Map<Object, Float> damageMultipliers;
     private final float adaptationProbability;
     private final int maxAdaptations;
@@ -103,9 +104,9 @@ public class DamageAdaptationConfig {
 
                 if (damageType.startsWith("#")) {
                     String tagName = damageType.substring(1);
-                    damageMultipliers.put(TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(tagName)), multiplier);
+                    damageMultipliers.put(TagKey.create(Registries.DAMAGE_TYPE, Identifier.parse(tagName)), multiplier);
                 } else {
-                    damageMultipliers.put(new ResourceLocation(damageType), multiplier);
+                    damageMultipliers.put(Identifier.parse(damageType), multiplier);
                 }
             }
         }

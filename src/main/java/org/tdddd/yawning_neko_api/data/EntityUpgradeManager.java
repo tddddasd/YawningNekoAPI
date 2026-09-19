@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -82,7 +82,8 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
     }
 
     public static void setupEntityUpgradeLevel(Mob entity) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         UpgradeConfig config = ENTITY_UPGRADE_CONFIGS.get(entityId);
 
         if (config != null) {
@@ -106,13 +107,13 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
     }
 
     public static int getEffectSpecificLevel(Mob entity, String effectId) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         return EFFECT_SPECIFIC_LEVELS.getOrDefault(entityId, new HashMap<>())
                 .getOrDefault(effectId, 0);
     }
 
     public static void setEffectSpecificLevel(Mob entity, String effectId, int level) {
-        String entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()).toString();
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         EFFECT_SPECIFIC_LEVELS.computeIfAbsent(entityId, k -> new HashMap<>())
                 .put(effectId, level);
 
@@ -131,7 +132,8 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
     }
 
     public static int getEntityUpgradeLevel(Mob entity) {
-        return entity.getPersistentData().getInt("AttackUpgradeLevel");
+        // 26.1.2 的 CompoundTag#getInt 返回 Optional<Integer>，用 getIntOr 保持原语义
+        return entity.getPersistentData().getIntOr("AttackUpgradeLevel", 0);
     }
 
     public static UpgradeConfig getUpgradeConfig(String entityId) {

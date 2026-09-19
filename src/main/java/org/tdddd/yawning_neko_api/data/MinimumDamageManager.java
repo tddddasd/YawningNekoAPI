@@ -3,11 +3,11 @@ package org.tdddd.yawning_neko_api.data;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +20,7 @@ public class MinimumDamageManager implements ResourceManagerReloadListener {
     private static final Gson GSON = new Gson();
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final Map<ResourceLocation, MinDamageConfig> ENTITY_CONFIGS = new HashMap<>();
+    private static final Map<Identifier, MinDamageConfig> ENTITY_CONFIGS = new HashMap<>();
 
     private static MinimumDamageManager instance;
 
@@ -43,7 +43,7 @@ public class MinimumDamageManager implements ResourceManagerReloadListener {
                         if (element.isJsonObject()) {
                             JsonObject jsonObject = element.getAsJsonObject();
                             for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-                                ResourceLocation entityId = ResourceLocation.tryParse(entry.getKey());
+                                Identifier entityId = Identifier.tryParse(entry.getKey());
                                 if (entityId != null) {
                                     MinDamageConfig config = MinDamageConfig.fromJson(entry.getValue());
                                     ENTITY_CONFIGS.put(entityId, config);
@@ -58,7 +58,8 @@ public class MinimumDamageManager implements ResourceManagerReloadListener {
 
     public float getMinDamage(Entity attacker) {
         if (attacker == null) return 0.0f;
-        ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(attacker.getType());
+        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType());
         if (entityId == null) return 0.0f;
         MinDamageConfig config = ENTITY_CONFIGS.get(entityId);
         return config != null ? config.getMinDamage() : 0.0f;
@@ -66,7 +67,7 @@ public class MinimumDamageManager implements ResourceManagerReloadListener {
 
     public boolean hasMinimumDamageConfig(Entity attacker) {
         if (attacker == null) return false;
-        ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(attacker.getType());
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType());
         return entityId != null && ENTITY_CONFIGS.containsKey(entityId);
     }
 }
