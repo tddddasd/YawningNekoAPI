@@ -42,7 +42,7 @@ public class DamageAdaptation {
     private static final WeakHashMap<LivingEntity, String> serverLastDamageTypeKey = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> lastAdaptationEventType = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Long> lastAdaptationEventTime = new WeakHashMap<>();
-    private static final long EVENT_DISPLAY_DURATION_TICKS = 10; // 显示持续时间（游戏刻）
+    private static final long EVENT_DISPLAY_DURATION_TICKS = 10; 
     private static final WeakHashMap<LivingEntity, Long> clientEventExpireTick = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> clientEventType = new WeakHashMap<>();
 
@@ -338,7 +338,7 @@ public class DamageAdaptation {
             entity.setHealth(entity.getMaxHealth());
             spawnTimeMap.put(entity, currentTime);
 
-            // 播放粒子效果（服务端）
+            
             if (!entity.level().isClientSide && entity.level() instanceof ServerLevel serverLevel) {
                 RandomSource random = entity.getRandom();
                 int count = 7 + random.nextInt(6);
@@ -424,7 +424,7 @@ public class DamageAdaptation {
 
     public static void updateClientAdaptationEvent(LivingEntity entity, int eventType) {
         if (entity.level().isClientSide) {
-            long expireTick = entity.level().getGameTime() + 10; // 持续10刻
+            long expireTick = entity.level().getGameTime() + 10; 
             clientEventExpireTick.put(entity, expireTick);
             clientEventType.put(entity, eventType);
         }

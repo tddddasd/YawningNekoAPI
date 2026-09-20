@@ -148,7 +148,7 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
         public final int defaultLevel;
         public final float randomChance;
         public final LevelConditions levelConditions;
-        public final Map<String, Float> levelUpChances; // 效果ID -> 升级概率
+        public final Map<String, Float> levelUpChances; 
 
         public UpgradeConfig(int minLevel, int maxLevel, int defaultLevel,
                              float randomChance, LevelConditions levelConditions,

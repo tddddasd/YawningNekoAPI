@@ -88,7 +88,7 @@ public class DamageAdaptationConfig {
         }
 
         return multiplier != 0.0f &&
-                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && // 使用容差比较浮点数
+                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && 
                 damageAmount > 0.0f;
     }
 

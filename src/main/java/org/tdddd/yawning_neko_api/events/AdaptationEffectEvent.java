@@ -21,8 +21,8 @@ public class AdaptationEffectEvent extends Event {
     }
 
     public enum Type {
-        PARTIAL_ADAPTATION,   // 部分适应
-        FULL_ADAPTATION       // 完全适应
+        PARTIAL_ADAPTATION,   
+        FULL_ADAPTATION       
     }
 
     @Override
