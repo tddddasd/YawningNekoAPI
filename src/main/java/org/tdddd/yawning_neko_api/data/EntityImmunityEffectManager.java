@@ -32,9 +32,7 @@ public class EntityImmunityEffectManager implements ResourceManagerReloadListene
                 });
     }
 
-    /**
-     * 解析 JSON 元素，填充 ENTITY_IMMUNITIES 映射。
-     */
+    
     private void parseImmunities(JsonElement element) {
         if (!element.isJsonObject()) {
             return;
@@ -87,7 +85,7 @@ public class EntityImmunityEffectManager implements ResourceManagerReloadListene
     }
 
     public static boolean isImmune(LivingEntity entity, String effectId) {
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         List<String> immunities = ENTITY_IMMUNITIES.get(entityId);
         return immunities != null && immunities.contains(effectId);

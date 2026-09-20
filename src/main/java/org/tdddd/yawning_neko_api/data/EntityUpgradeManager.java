@@ -82,7 +82,7 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
     }
 
     public static void setupEntityUpgradeLevel(Mob entity) {
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         UpgradeConfig config = ENTITY_UPGRADE_CONFIGS.get(entityId);
 
@@ -132,7 +132,7 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
     }
 
     public static int getEntityUpgradeLevel(Mob entity) {
-        // 26.1.2 的 CompoundTag#getInt 返回 Optional<Integer>，用 getIntOr 保持原语义
+        
         return entity.getPersistentData().getIntOr("AttackUpgradeLevel", 0);
     }
 
@@ -150,7 +150,7 @@ public class EntityUpgradeManager implements ResourceManagerReloadListener {
         public final int defaultLevel;
         public final float randomChance;
         public final LevelConditions levelConditions;
-        public final Map<String, Float> levelUpChances; // 效果ID -> 升级概率
+        public final Map<String, Float> levelUpChances; 
 
         public UpgradeConfig(int minLevel, int maxLevel, int defaultLevel,
                              float randomChance, LevelConditions levelConditions,

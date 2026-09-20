@@ -58,7 +58,7 @@ public class MinimumDamageManager implements ResourceManagerReloadListener {
 
     public float getMinDamage(Entity attacker) {
         if (attacker == null) return 0.0f;
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType());
         if (entityId == null) return 0.0f;
         MinDamageConfig config = ENTITY_CONFIGS.get(entityId);

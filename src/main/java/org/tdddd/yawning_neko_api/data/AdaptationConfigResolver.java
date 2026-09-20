@@ -14,7 +14,7 @@ public class AdaptationConfigResolver {
         Identifier ruleId = AdaptationPriorityRuleLoader.resolveConfigId(entity, level);
         if (ruleId != null) return ruleId;
 
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (entityId == null) return null;
 
@@ -33,8 +33,8 @@ public class AdaptationConfigResolver {
         DamageAdaptationConfig config = DamageAdaptationManager.getDirectConfig(configId);
         if (config == null) return null;
 
-        // 原 entity.getCapability(IAdaptationData.CAPABILITY).ifPresent(...)
-        // 26.1.2 数据附件：getData 在缺失时创建默认值并返回，永不返回 null
+        
+        
         IAdaptationData data = entity.getData(CapabilityEventHandler.ADAPTATION_DATA);
         String currentRecorded = data.getCurrentConfigId();
         String newIdStr = configId.toString();

@@ -7,17 +7,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 原 1.20.1 的 Forge Capability 实现（内含 {@code Provider implements ICapabilitySerializable<CompoundTag>}）。
- *
- * <p>26.1.2 数据附件不再需要 Provider：附件类型在
- * {@link org.tdddd.yawning_neko_api.events.CapabilityEventHandler#ADAPTATION_DATA} 注册，
- * 由 {@code IAttachmentHolder#getData/setData} 直接读写本对象；
- * 持久化由 {@link net.neoforged.neoforge.attachment.AttachmentType#serializable}
- * （基于 {@link net.neoforged.neoforge.common.util.ValueIOSerializable}）完成。
- */
+
 public class AdaptationDataCapability implements IAdaptationData {
-    /** 伤害类型键 -> 适应层数。原 NBT 里是一个复合标签，ValueIO 下用 Codec 表达同样的字符串映射。 */
+    
     private static final Codec<Map<String, Integer>> ADAPTATIONS_CODEC = Codec.unboundedMap(Codec.STRING, Codec.INT);
 
     private final Map<String, Integer> adaptations = new HashMap<>();
@@ -111,8 +103,8 @@ public class AdaptationDataCapability implements IAdaptationData {
     @Override
     public void setLastHurtTime(long tick) { this.lastHurtTime = tick; }
 
-    // 原 serializeNBT()/deserializeNBT() 的字段布局原样保留：
-    // adaptations / deathCount / configId / brokenEnd / maxAdaptations / lastDamageType。
+    
+    
     @Override
     public void serialize(ValueOutput output) {
         output.store("adaptations", ADAPTATIONS_CODEC, adaptations);
@@ -135,6 +127,6 @@ public class AdaptationDataCapability implements IAdaptationData {
         maxAdaptations = input.getIntOr("maxAdaptations", 0);
         spawnTime = 0;
         lastHurtTime = 0;
-        // 与原 deserializeNBT 一致：lastDamagedType 不从存档恢复。
+        
     }
 }

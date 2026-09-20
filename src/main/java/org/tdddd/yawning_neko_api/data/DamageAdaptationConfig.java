@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DamageAdaptationConfig {
-    /** 键既可能是 Identifier（具体伤害类型），也可能是 TagKey<DamageType>（# 标签）。 */
+    
     private final Map<Object, Float> damageMultipliers;
     private final float adaptationProbability;
     private final int maxAdaptations;
@@ -89,7 +89,7 @@ public class DamageAdaptationConfig {
         }
 
         return multiplier != 0.0f &&
-                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && // 使用容差比较浮点数
+                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && 
                 damageAmount > 0.0f;
     }
 

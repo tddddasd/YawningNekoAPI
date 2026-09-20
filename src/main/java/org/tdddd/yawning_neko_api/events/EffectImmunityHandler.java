@@ -13,11 +13,7 @@ import org.tdddd.yawning_neko_api.data.EntityImmunityEffectManager;
 @EventBusSubscriber(modid = Yawning_neko_api.MODID)
 public class EffectImmunityHandler {
 
-    /**
-     * 原 1.20.1 用 {@code event.setResult(Event.Result.DENY)}；
-     * 26.1.2 的 MobEffectEvent.Applicable 改用自己的三态枚举
-     * {@code MobEffectEvent.Applicable.Result.DO_NOT_APPLY}。
-     */
+    
     @SubscribeEvent
     public static void onEffectApplicable(MobEffectEvent.Applicable event) {
         LivingEntity entity = event.getEntity();
@@ -28,8 +24,8 @@ public class EffectImmunityHandler {
         MobEffectInstance effectInstance = event.getEffectInstance();
         if (effectInstance == null) return;
 
-        // 26.1.2：MobEffectInstance#getEffect() 返回 Holder<MobEffect>，
-        // 且 ForgeRegistries.MOB_EFFECTS -> BuiltInRegistries.MOB_EFFECT
+        
+        
         Identifier effectId = BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect().value());
         if (effectId == null) return;
 

@@ -10,11 +10,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.tdddd.yawning_neko_api.Yawning_neko_api;
 import org.tdddd.yawning_neko_api.data.DamageAdaptation;
 
-/**
- * 原 1.20.1 是 SimpleChannel 的普通消息类（FriendlyByteBuf + NetworkEvent.Context）。
- * 26.1.2 改为 {@link CustomPacketPayload}：自带 TYPE 与 STREAM_CODEC，处理函数接收
- * {@link IPayloadContext}。写出的数据与顺序保持不变。
- */
+
 public class AdaptationDataSyncPacket implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<AdaptationDataSyncPacket> TYPE =
@@ -56,7 +52,7 @@ public class AdaptationDataSyncPacket implements CustomPacketPayload {
 
     public void handle(IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            // 原 ctx.get().getSender().level().getEntity(entityId) -> ctx.player().level().getEntity(entityId)
+            
             Entity entity = ctx.player().level().getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 DamageAdaptation.updateClientAdaptationData(living, adaptationLevel, damageTypeKeyStr, maxAdaptations);

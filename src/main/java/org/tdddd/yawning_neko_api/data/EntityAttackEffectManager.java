@@ -125,7 +125,7 @@ public class EntityAttackEffectManager implements ResourceManagerReloadListener 
     }
 
     public static int getMaxUpgradeLevel(Mob entity) {
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         EntityAttackConfig config = ENTITY_ATTACK_CONFIGS.get(entityId);
         return config != null ? config.getMaxUpgradeLevel() : 0;

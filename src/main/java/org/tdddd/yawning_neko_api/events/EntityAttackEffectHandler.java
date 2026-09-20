@@ -26,7 +26,7 @@ public class EntityAttackEffectHandler {
         }
     }
 
-    /** 原 1.20.1：{@code LivingDamageEvent}；26.1.2 拆分为 Pre/Post，这里对应结算后的 Post。 */
+    
     @SubscribeEvent
     public void onEntityAttack(LivingDamageEvent.Post event) {
         if (event.getSource().getDirectEntity() instanceof Mob attacker) {
@@ -51,7 +51,7 @@ public class EntityAttackEffectHandler {
     }
 
     private void applyEffect(LivingEntity target, EntityAttackEffectManager.AttackEffect effectConfig) {
-        // 26.1.2：MobEffectInstance 需要 Holder<MobEffect>，因此从注册表取 Holder 而不是裸对象
+        
         Identifier effectKey = Identifier.tryParse(effectConfig.getEffectId());
         if (effectKey == null) return;
         Holder<MobEffect> mobEffect = BuiltInRegistries.MOB_EFFECT.get(effectKey).orElse(null);
@@ -77,7 +77,7 @@ public class EntityAttackEffectHandler {
 
     private boolean attemptPreAttackLevelUp(Mob attacker, List<EntityAttackEffectManager.AttackEffect> effects) {
         boolean upgraded = false;
-        // 原 ForgeRegistries.ENTITY_TYPES -> BuiltInRegistries.ENTITY_TYPE
+        
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType()).toString();
         EntityUpgradeManager.UpgradeConfig config = EntityUpgradeManager.getUpgradeConfig(entityId);
 

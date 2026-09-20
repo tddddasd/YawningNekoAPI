@@ -44,13 +44,13 @@ public class DamageAdaptation {
     private static final WeakHashMap<LivingEntity, String> serverLastDamageTypeKey = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> lastAdaptationEventType = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Long> lastAdaptationEventTime = new WeakHashMap<>();
-    private static final long EVENT_DISPLAY_DURATION_TICKS = 10; // 显示持续时间（游戏刻）
+    private static final long EVENT_DISPLAY_DURATION_TICKS = 10; 
     private static final WeakHashMap<LivingEntity, Long> clientEventExpireTick = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> clientEventType = new WeakHashMap<>();
 
     private static final WeakHashMap<LivingEntity, Integer> clientMaxAdaptations = new WeakHashMap<>();
 
-    /** 26.1.2 数据附件读取：始终返回对象（缺失时创建默认值），取代原 getCapability(...).orElse(null)。 */
+    
     private static IAdaptationData attachmentData(LivingEntity entity) {
         return entity.getData(CapabilityEventHandler.ADAPTATION_DATA);
     }
@@ -74,8 +74,8 @@ public class DamageAdaptation {
         }
     }
 
-    // 原 1.20.1 的 attachCapability(AttachCapabilitiesEvent<Entity>) 已删除：
-    // 数据附件在 CapabilityEventHandler 里统一注册，不需要逐实体附加事件。
+    
+    
 
     public static DamageAdaptationConfig getEntityConfig(LivingEntity entity) {
         if (entity.level().isClientSide()) return null;
@@ -139,12 +139,12 @@ public class DamageAdaptation {
     }
 
     private static Object getDamageTypeKey(LivingEntity entity, DamageType damageType, DamageAdaptationConfig config) {
-        // 原 registryAccess().registryOrThrow(...) -> lookupOrThrow(...)
+        
         Registry<DamageType> registry = entity.level().registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE);
         Identifier damageTypeId = registry.getKey(damageType);
         if (damageTypeId == null) return null;
 
-        // 原 registry.getHolder(ResourceKey) 在 26.1.2 中改为 registry.get(Identifier)
+        
         Optional<Holder.Reference<DamageType>> holder = registry.get(damageTypeId);
 
         for (Object key : config.getDamageMultipliers().keySet()) {
@@ -157,11 +157,7 @@ public class DamageAdaptation {
         return damageTypeId;
     }
 
-    /**
-     * 原 1.20.1 监听 {@code LivingHurtEvent}；
-     * 26.1.2 对应 {@link LivingIncomingDamageEvent}（伤害仍可通过 {@code getAmount/setAmount} 调整，
-     * 取消事件则完全抵消这次伤害）。
-     */
+    
     @SubscribeEvent
     public static void onLivingHurt(LivingIncomingDamageEvent event) {
         LivingEntity entity = event.getEntity();
@@ -345,7 +341,7 @@ public class DamageAdaptation {
             entity.setHealth(entity.getMaxHealth());
             spawnTimeMap.put(entity, currentTime);
 
-            // 播放粒子效果（服务端）
+            
             if (!entity.level().isClientSide() && entity.level() instanceof ServerLevel serverLevel) {
                 RandomSource random = entity.getRandom();
                 int count = 7 + random.nextInt(6);
@@ -354,8 +350,8 @@ public class DamageAdaptation {
                     double x = bb.minX + random.nextDouble() * (bb.maxX - bb.minX);
                     double y = bb.minY + random.nextDouble() * (bb.maxY - bb.minY);
                     double z = bb.minZ + random.nextDouble() * (bb.maxZ - bb.minZ);
-                    // 原 1.20.1 用 new DustParticleOptions(new Vector3f(0.2F, 1.0F, 0.2F), 1.0F)；
-                    // 26.1.2 改为 RGB24 整数颜色：0x33FF33 == (0.2, 1.0, 0.2)
+                    
+                    
                     DustParticleOptions dust = new DustParticleOptions(0x33FF33, 1.0F);
                     serverLevel.sendParticles(dust, x, y, z, 1, 0, 0, 0, 0.1);
                 }
@@ -432,7 +428,7 @@ public class DamageAdaptation {
 
     public static void updateClientAdaptationEvent(LivingEntity entity, int eventType) {
         if (entity.level().isClientSide()) {
-            long expireTick = entity.level().getGameTime() + 10; // 持续10刻
+            long expireTick = entity.level().getGameTime() + 10; 
             clientEventExpireTick.put(entity, expireTick);
             clientEventType.put(entity, eventType);
         }
@@ -468,8 +464,8 @@ public class DamageAdaptation {
         return getAdaptationData(entity) > 0 && entity.hurtTime > 0;
     }
 
-    // 原 1.20.1：AddReloadListenerEvent#addListener(listener)
-    // 26.1.2：AddServerReloadListenersEvent，且需要给每个监听器一个唯一 Identifier key
+    
+    
     @SubscribeEvent
     public static void onAddReloadListeners(AddServerReloadListenersEvent event) {
         event.addListener(Identifier.fromNamespaceAndPath(Yawning_neko_api.MODID, "damage_adaptation_configs"), new DamageAdaptationManager());

@@ -15,10 +15,7 @@ public class MinDamageConfig {
 
     public float getMinDamage() { return minDamage; }
 
-    /**
-     * 从JSON解析配置
-     * 支持数字（直接值）或对象（含 min_damage 字段）
-     */
+    
     public static MinDamageConfig fromJson(JsonElement json) {
         if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isNumber()) {
             float minDamage = json.getAsFloat();

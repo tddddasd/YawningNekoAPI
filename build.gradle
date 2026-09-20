@@ -105,8 +105,6 @@ tasks.named('processResources').configure {
     duplicatesStrategy = 'EXCLUDE'
 }
 
-// 作为 jar-in-jar 被 epca 内置时需要显式模块名（ModDevGradle 的 jarJar 要求，
-// 以避免不同模组的库文件重名冲突）。
 tasks.named('jar', Jar).configure {
     manifest {
         attributes('Automatic-Module-Name': 'org.tddd.yawning_neko_api')

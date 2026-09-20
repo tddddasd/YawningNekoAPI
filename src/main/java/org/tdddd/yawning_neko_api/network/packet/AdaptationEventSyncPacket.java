@@ -10,9 +10,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.tdddd.yawning_neko_api.Yawning_neko_api;
 import org.tdddd.yawning_neko_api.data.DamageAdaptation;
 
-/**
- * 同 {@link AdaptationDataSyncPacket}：SimpleChannel 消息 -> CustomPacketPayload。
- */
+
 public class AdaptationEventSyncPacket implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<AdaptationEventSyncPacket> TYPE =

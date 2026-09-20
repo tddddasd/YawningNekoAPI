@@ -33,7 +33,7 @@ public class DamageAdaptationManager implements ResourceManagerReloadListener {
                     } catch (Exception e) {
                     }
                 });
-        // 原 FMLEnvironment.dist.isClient() -> FMLEnvironment.getDist()
+        
         if (FMLEnvironment.getDist() != Dist.CLIENT) {
             AdaptationConfigResolver.refreshAllEntitiesConfig();
         }

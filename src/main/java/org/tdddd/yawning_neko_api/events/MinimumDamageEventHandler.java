@@ -12,12 +12,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import org.tdddd.yawning_neko_api.Yawning_neko_api;
 import org.tdddd.yawning_neko_api.data.MinimumDamageManager;
 
-/**
- * 原 1.20.1 监听 {@code LivingAttackEvent}（发生在无敌帧检查之前）。
- * 26.1.2 已移除 LivingAttackEvent，最接近的替代是
- * {@link LivingIncomingDamageEvent}（发生在无敌帧检查之后、伤害结算之前）。
- * 这里保留原有的“直接改血量 + 触发无敌帧”逻辑，不取消事件。
- */
+
 @EventBusSubscriber(modid = Yawning_neko_api.MODID)
 public class MinimumDamageEventHandler {
 
