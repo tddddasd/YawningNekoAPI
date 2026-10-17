@@ -25,9 +25,7 @@ public class DamageAdaptationManager implements ResourceManagerReloadListener {
                 .forEach((resourceLocation, resource) -> {
                     try (InputStream stream = resource.open()) {
                         JsonObject json = GSON.fromJson(new InputStreamReader(stream), JsonObject.class);
-                        String path = resourceLocation.getPath();
-                        String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-                        ResourceLocation configId = new ResourceLocation(resourceLocation.getNamespace(), fileName);
+                        ResourceLocation configId = jsonId(json, resourceLocation);
                         DamageAdaptationConfig config = DamageAdaptationConfig.fromJson(json);
                         CONFIGS.put(configId, config);
                     } catch (Exception e) {
@@ -52,5 +50,18 @@ public class DamageAdaptationManager implements ResourceManagerReloadListener {
 
     public static DamageAdaptationConfig getDirectConfig(ResourceLocation configId) {
         return CONFIGS.get(configId);
+    }
+
+    /** Reads the explicit "id" from the json, falling back to the file name for old packs. */
+    private static ResourceLocation jsonId(com.google.gson.JsonObject json, ResourceLocation file) {
+        if (json.has("id") && json.get("id").isJsonPrimitive()) {
+            ResourceLocation explicit = ResourceLocation.tryParse(json.get("id").getAsString());
+            if (explicit != null) {
+                return explicit;
+            }
+        }
+        String path = file.getPath();
+        String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+        return new ResourceLocation(file.getNamespace(), fileName);
     }
 }

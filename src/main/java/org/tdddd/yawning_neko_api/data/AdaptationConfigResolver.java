@@ -25,24 +25,48 @@ public class AdaptationConfigResolver {
     public static DamageAdaptationConfig getConfig(LivingEntity entity) {
         if (entity.level().isClientSide) return null;
 
-        ResourceLocation configId = resolveConfigId(entity, entity.level());
-        if (configId == null) return null;
+        // Base layer: the mapping for this entity type, else the entity type's own config file.
+        ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+        ResourceLocation baseId = null;
+        DamageAdaptationConfig base = null;
+        if (entityId != null) {
+            ResourceLocation mapped = EntityAdaptationMapping.getConfigForEntity(entityId);
+            baseId = mapped != null ? mapped : entityId;
+            base = DamageAdaptationManager.getDirectConfig(baseId);
+        }
 
-        DamageAdaptationConfig config = DamageAdaptationManager.getDirectConfig(configId);
-        if (config == null) return null;
+        // Rule layer: resolved per entity, so NBT differences between two mobs of the same type matter.
+        ResourceLocation ruleId = AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
+        DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
 
+        DamageAdaptationConfig resolved;
+        String signature;
+        if (rule == null) {
+            resolved = base;
+            signature = baseId == null ? null : baseId.toString();
+        } else if (base == null) {
+            resolved = rule;
+            signature = ruleId.toString();
+        } else if (entityId != null && EntityAdaptationMapping.isOverride(entityId)) {
+            resolved = rule;                                                   // mapping asked for override
+            signature = ruleId + "|override|" + baseId;
+        } else {
+            resolved = DamageAdaptationConfig.additive(base, rule);            // default: add
+            signature = baseId + "|add|" + ruleId;
+        }
+        if (resolved == null || signature == null) return null;
+
+        final String newSignature = signature;
         entity.getCapability(IAdaptationData.CAPABILITY).ifPresent(data -> {
-            String currentRecorded = data.getCurrentConfigId();
-            String newIdStr = configId.toString();
-            if (!newIdStr.equals(currentRecorded)) {
+            if (!newSignature.equals(data.getCurrentConfigId())) {
                 data.clearAdaptations();
                 data.setDeathCount(0);
                 data.setBrokenAdaptationEndTick(0);
-                data.setCurrentConfigId(newIdStr);
+                data.setCurrentConfigId(newSignature);
             }
         });
 
-        return config;
+        return resolved;
     }
 
     public static void refreshAllEntitiesConfig() {

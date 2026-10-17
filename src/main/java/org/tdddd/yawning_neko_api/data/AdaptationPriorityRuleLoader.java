@@ -49,9 +49,7 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
             try (InputStream stream = resource.open();
                  InputStreamReader reader = new InputStreamReader(stream)) {
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
-                String path = id.getPath();
-                String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-                ResourceLocation mappingId = new ResourceLocation(id.getNamespace(), fileName);
+                ResourceLocation mappingId = jsonId(json, id);
                 Map<ResourceLocation, ResourceLocation> entityToConfig = new HashMap<>();
 
                 for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
@@ -225,5 +223,18 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
             String namePattern = obj.has("name_pattern") ? obj.get("name_pattern").getAsString() : null;
             return new Condition(types, dims, namePattern);
         }
+    }
+
+    /** Reads the explicit "id" from the json, falling back to the file name for old packs. */
+    private static ResourceLocation jsonId(com.google.gson.JsonObject json, ResourceLocation file) {
+        if (json.has("id") && json.get("id").isJsonPrimitive()) {
+            ResourceLocation explicit = ResourceLocation.tryParse(json.get("id").getAsString());
+            if (explicit != null) {
+                return explicit;
+            }
+        }
+        String path = file.getPath();
+        String fileName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+        return new ResourceLocation(file.getNamespace(), fileName);
     }
 }

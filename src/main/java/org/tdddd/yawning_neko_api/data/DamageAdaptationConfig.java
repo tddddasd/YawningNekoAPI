@@ -57,6 +57,26 @@ public class DamageAdaptationConfig {
         this.maxMultiplierAbs = maxAbs;
     }
 
+
+    /**
+     * Additive merge: the overlay's damage multipliers are summed onto the base's, while the overlay's
+     * scalar parameters win (probabilities and counts cannot be meaningfully summed). This is what
+     * "mode": "add" on an entity adaptation mapping resolves to.
+     */
+    public static DamageAdaptationConfig additive(DamageAdaptationConfig base, DamageAdaptationConfig overlay) {
+        java.util.Map<Object, Float> multipliers = new java.util.HashMap<>(base.damageMultipliers);
+        overlay.damageMultipliers.forEach((key, value) -> multipliers.merge(key, value, Float::sum));
+        return new DamageAdaptationConfig(multipliers,
+                overlay.adaptationProbability,
+                overlay.maxAdaptations,
+                overlay.adaptationPercentagePerInjury,
+                overlay.minimumKillDuration,
+                overlay.minimumAttackInterval,
+                overlay.minimumKillCount,
+                overlay.brokenAdaptationDuration,
+                overlay.maxAdaptableDamageTypes);
+    }
+
     public Map<Object, Float> getDamageMultipliers() { return damageMultipliers; }
     public float getAdaptationProbability() { return adaptationProbability; }
     public int getMaxAdaptations() { return maxAdaptations; }
@@ -88,7 +108,7 @@ public class DamageAdaptationConfig {
         }
 
         return multiplier != 0.0f &&
-                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && 
+                Math.abs(multiplier) >= maxMultiplierAbs - 0.001f && // 使用容差比较浮点数
                 damageAmount > 0.0f;
     }
 

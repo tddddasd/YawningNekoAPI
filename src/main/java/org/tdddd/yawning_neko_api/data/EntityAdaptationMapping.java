@@ -16,10 +16,13 @@ import java.util.Map;
 public class EntityAdaptationMapping implements ResourceManagerReloadListener {
     private static final Gson GSON = new Gson();
     private static final Map<ResourceLocation, ResourceLocation> ENTITY_TO_CONFIG_MAP = new HashMap<>();
+    /** true = override the base config, false (the default) = add to it. */
+    private static final Map<ResourceLocation, Boolean> ENTITY_OVERRIDE_MAP = new HashMap<>();
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         ENTITY_TO_CONFIG_MAP.clear();
+          ENTITY_OVERRIDE_MAP.clear();
 
         resourceManager.listResources("entity_adaptation_mappings",
                         file -> file.getPath().endsWith(".json"))
@@ -52,6 +55,10 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
                 } else {
                     continue;
                 }
+                  JsonElement modeElement = configElement.getAsJsonObject().get("mode");
+                  if (modeElement != null && modeElement.isJsonPrimitive()) {
+                      ENTITY_OVERRIDE_MAP.put(entityId, "override".equalsIgnoreCase(modeElement.getAsString()));
+                  }
             } else {
                 continue;
             }
@@ -76,5 +83,15 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
 
     public static boolean hasMapping(ResourceLocation entityId) {
         return ENTITY_TO_CONFIG_MAP.containsKey(entityId);
+    }
+
+    /** Missing "mode" means add, per spec. */
+    public static boolean isOverride(ResourceLocation entityId) {
+        return ENTITY_OVERRIDE_MAP.getOrDefault(entityId, Boolean.FALSE);
+    }
+
+    /** Drops the cached mode of one entity (used when a mapping is re-resolved). */
+    public static void forgetOverride(ResourceLocation entityId) {
+        ENTITY_OVERRIDE_MAP.remove(entityId);
     }
 }
