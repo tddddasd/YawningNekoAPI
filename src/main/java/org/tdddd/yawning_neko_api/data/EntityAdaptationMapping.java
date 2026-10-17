@@ -39,6 +39,10 @@ public class EntityAdaptationMapping implements ResourceManagerReloadListener {
     private void parseMappingsFromJson(JsonObject jsonObject, String sourceNamespace) {
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String entityKey = entry.getKey();
+                      // metadata keys ("id", "_comment", ...) are not entity ids
+                      if (entityKey.equals("id") || entityKey.startsWith("_")) {
+                          continue;
+                      }
             JsonElement configElement = entry.getValue();
             ResourceLocation entityId = ResourceLocation.tryParse(entityKey);
             if (entityId == null) {

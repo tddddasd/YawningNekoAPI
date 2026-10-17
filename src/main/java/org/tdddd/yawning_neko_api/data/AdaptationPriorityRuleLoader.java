@@ -1,6 +1,7 @@
 package org.tdddd.yawning_neko_api.data;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -54,6 +55,10 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
 
                 for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
                     String entityKey = entry.getKey();
+                      // metadata keys ("id", "_comment", ...) are not entity ids
+                      if (entityKey.equals("id") || entityKey.startsWith("_")) {
+                          continue;
+                      }
                     JsonElement configElement = entry.getValue();
                     ResourceLocation entityId = ResourceLocation.tryParse(entityKey);
                     if (entityId == null) continue;
@@ -156,6 +161,15 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
             Condition condition = Condition.fromJson(condObj);
             ResourceLocation configId = null;
             ResourceLocation mappingId = null;
+            // new form: { "type": "config"|"mapping", "target": "ns:id" }, old form kept working
+            if (obj.has("type") && obj.has("target")) {
+                ResourceLocation target = ResourceLocation.tryParse(obj.get("target").getAsString());
+                if ("mapping".equalsIgnoreCase(obj.get("type").getAsString())) {
+                    mappingId = target;
+                } else {
+                    configId = target;
+                }
+            }
             if (obj.has("config")) {
                 configId = ResourceLocation.tryParse(obj.get("config").getAsString());
             }
@@ -173,12 +187,15 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
         final Set<ResourceLocation> entityTypes;
         final Set<ResourceKey<Level>> dimensions;
         final String namePattern;
+        /** Dotted NBT paths to expected values; matched against entity.saveWithoutId(...). */
+        final java.util.Map<String, String> nbt;
 
         Condition(Set<ResourceLocation> entityTypes, Set<ResourceKey<Level>> dimensions,
-                  String namePattern) {
+                  String namePattern, java.util.Map<String, String> nbt) {
             this.entityTypes = entityTypes;
             this.dimensions = dimensions;
             this.namePattern = namePattern;
+            this.nbt = nbt;
         }
 
         boolean matches(LivingEntity entity, Level level) {
@@ -194,7 +211,39 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
                 String customName = entity.getCustomName() != null ? entity.getCustomName().getString() : "";
                 if (!Pattern.matches(namePattern, customName)) return false;
             }
+            if (nbt != null && !nbt.isEmpty()) {
+                java.util.Map<String, String> actual = flattenNbt(entity.saveWithoutId(new CompoundTag()));
+                for (java.util.Map.Entry<String, String> entry : nbt.entrySet()) {
+                    if (!valueMatches(actual.get(entry.getKey()), entry.getValue())) return false;
+                }
+            }
             return true;
+        }
+
+        private static java.util.Map<String, String> flattenNbt(net.minecraft.nbt.Tag tag) {
+            java.util.Map<String, String> out = new java.util.HashMap<>();
+            flattenNbt(tag, "", out);
+            return out;
+        }
+
+        private static void flattenNbt(net.minecraft.nbt.Tag tag, String prefix, java.util.Map<String, String> out) {
+            if (tag instanceof CompoundTag compound) {
+                for (String key : compound.getAllKeys()) {
+                    flattenNbt(compound.get(key), prefix.isEmpty() ? key : prefix + "." + key, out);
+                }
+            } else if (tag != null) {
+                out.put(prefix, tag.getAsString());
+            }
+        }
+
+        private static boolean valueMatches(String actual, String expected) {
+            if (actual == null) return false;
+            if (actual.equals(expected)) return true;
+            try {
+                return Double.compare(Double.parseDouble(actual), Double.parseDouble(expected)) == 0;
+            } catch (NumberFormatException e) {
+                return false;
+            }
         }
 
         static Condition fromJson(JsonObject obj) {
@@ -221,7 +270,16 @@ public class AdaptationPriorityRuleLoader implements ResourceManagerReloadListen
                 }
             }
             String namePattern = obj.has("name_pattern") ? obj.get("name_pattern").getAsString() : null;
-            return new Condition(types, dims, namePattern);
+            java.util.Map<String, String> nbt = null;
+            if (obj.has("nbt") && obj.get("nbt").isJsonObject()) {
+                nbt = new java.util.HashMap<>();
+                for (java.util.Map.Entry<String, JsonElement> e : obj.getAsJsonObject("nbt").entrySet()) {
+                    if (e.getValue().isJsonPrimitive()) {
+                        nbt.put(e.getKey(), e.getValue().getAsString());
+                    }
+                }
+            }
+            return new Condition(types, dims, namePattern, nbt);
         }
     }
 
