@@ -128,8 +128,7 @@ public class AdaptationConfigResolver {
         net.minecraft.resources.Identifier ruleId =
                 AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
         DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
-        int baseCount = base == null ? 0 : base.getMinimumKillCount();
-        int ruleCount = rule == null ? 0 : rule.getMinimumKillCount();
-        return baseCount + ruleCount;
+        // The upper bound is the base value from the json (the rule layer is not added in).
+        return base == null ? 0 : base.getMinimumKillCount();
     }
 }
