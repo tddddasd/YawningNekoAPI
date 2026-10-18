@@ -30,15 +30,13 @@ public class AdaptationEventSyncPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            // Client side only: getSender() is null on the client, so the entity has to be resolved
-            // through the client level instead of the (absent) sending player.
+            // Client side only: this packet only drives the local tint. The dist guard must come
+            // first, because Minecraft and the client classes it pulls in do not exist on a
+            // dedicated server and would fail to link the moment this method ran there.
+            if (!net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+                return;
+            }
             Minecraft mc = Minecraft.getInstance();
-            // Record by entity id first: a freshly spawned mob may not be resolvable yet, and the
-            // renderer reads this key, so the tint works without relogging.
-            org.apache.logging.log4j.LogManager.getLogger("yawning-neko-api")
-                    .info("event received: id={} type={} level={} gameTime={}",
-                            entityId, eventType, mc.level == null ? null : mc.level.dimension().location(),
-                            mc.level == null ? -1L : mc.level.getGameTime());
             DamageAdaptation.updateClientAdaptationEventById(entityId, eventType, mc.level);
             if (mc.level != null) {
                 Entity entity = mc.level.getEntity(entityId);
