@@ -7,10 +7,7 @@
   "mixins": [
     "LivingEntityMixin"
   ],
-  "client": [
-    "LivingEntityTintMixin",
-    "GeoEntityTintMixin"
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   },

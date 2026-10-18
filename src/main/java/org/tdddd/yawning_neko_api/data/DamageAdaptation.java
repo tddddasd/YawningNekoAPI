@@ -45,6 +45,47 @@ public class DamageAdaptation {
     private static final long EVENT_DISPLAY_DURATION_TICKS = 10; // 显示持续时间（游戏刻）
     private static final WeakHashMap<LivingEntity, Long> clientEventExpireTick = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> clientEventType = new WeakHashMap<>();
+    /** Client-side adaptation event state keyed by "dimension#entityId", so a respawned or
+     *  transiently different entity instance can still read the event that was sent for it. */
+    private static final java.util.Map<String, Integer> CLIENT_EVENT_BY_KEY = new java.util.HashMap<>();
+    private static final java.util.Map<String, Long> CLIENT_EVENT_EXPIRE_BY_KEY = new java.util.HashMap<>();
+
+    private static String eventKey(net.minecraft.world.entity.Entity entity) {
+        return entity.level().dimension().location() + "#" + entity.getId();
+    }
+
+    /** Entity-id keyed copy: the packet can record the event before the client entity exists. */
+    private static final java.util.Map<Integer, Integer> CLIENT_EVENT_BY_ID = new java.util.HashMap<>();
+    private static final java.util.Map<Integer, Long> CLIENT_EVENT_EXPIRE_BY_ID = new java.util.HashMap<>();
+    private static net.minecraft.world.level.Level lastClientEventLevel;
+
+    private static void ensureSameLevel(net.minecraft.world.level.Level level) {
+        if (level != lastClientEventLevel) {
+            lastClientEventLevel = level;
+            CLIENT_EVENT_BY_KEY.clear();
+            CLIENT_EVENT_EXPIRE_BY_KEY.clear();
+            CLIENT_EVENT_BY_ID.clear();
+            CLIENT_EVENT_EXPIRE_BY_ID.clear();
+            clientEventType.clear();
+            clientEventExpireTick.clear();
+        }
+    }
+
+    /**
+     * Records a client-side adaptation event keyed by entity id. This does not need the entity to be
+     * resolvable yet, which is what makes freshly spawned mobs work without relogging.
+     */
+    public static void updateClientAdaptationEventById(int entityId, int eventType,
+                                                       net.minecraft.world.level.Level level) {
+        ensureSameLevel(level);
+        long expireTick = (level == null ? 0L : level.getGameTime()) + 10;
+        CLIENT_EVENT_BY_ID.put(entityId, eventType);
+        CLIENT_EVENT_EXPIRE_BY_ID.put(entityId, expireTick);
+        if (level != null) {
+            CLIENT_EVENT_BY_KEY.put(level.dimension().location() + "#" + entityId, eventType);
+            CLIENT_EVENT_EXPIRE_BY_KEY.put(level.dimension().location() + "#" + entityId, expireTick);
+        }
+    }
 
     private static final WeakHashMap<LivingEntity, Integer> clientMaxAdaptations = new WeakHashMap<>();
 
@@ -427,12 +468,43 @@ public class DamageAdaptation {
      * 0 is a partial adaptation and 1 a full one. {@link #getLastAdaptationEventType} cannot be
      * used for this because it falls back to 0, which is also the partial-adaptation code.
      */
+    /** Diagnostics only: dumps every place the client-side event state could live. */
+    public static String debugEventState(LivingEntity entity) {
+        return "id=" + entity.getId()
+                + " byId=" + CLIENT_EVENT_BY_ID.get(entity.getId())
+                + " byIdExpire=" + CLIENT_EVENT_EXPIRE_BY_ID.get(entity.getId())
+                + " byKey=" + CLIENT_EVENT_BY_KEY.get(eventKey(entity))
+                + " instance=" + clientEventType.get(entity)
+                + " now=" + entity.level().getGameTime();
+    }
+
     public static int getActiveAdaptationEvent(LivingEntity entity) {
         if (!entity.level().isClientSide) {
             return -1;
         }
+        long now = entity.level().getGameTime();
+        ensureSameLevel(entity.level());
+        Integer byId = CLIENT_EVENT_BY_ID.get(entity.getId());
+        Long byIdExpire = CLIENT_EVENT_EXPIRE_BY_ID.get(entity.getId());
+        if (byId != null && byIdExpire != null && byIdExpire > now) {
+            return byId;
+        }
+        if (byIdExpire != null) {
+            CLIENT_EVENT_BY_ID.remove(entity.getId());
+            CLIENT_EVENT_EXPIRE_BY_ID.remove(entity.getId());
+        }
+        String key = eventKey(entity);
+        Long keyedExpire = CLIENT_EVENT_EXPIRE_BY_KEY.get(key);
+        Integer keyedType = CLIENT_EVENT_BY_KEY.get(key);
+        if (keyedExpire != null && keyedType != null) {
+            if (keyedExpire > now) {
+                return keyedType;
+            }
+            CLIENT_EVENT_EXPIRE_BY_KEY.remove(key);
+            CLIENT_EVENT_BY_KEY.remove(key);
+        }
         Long expire = clientEventExpireTick.get(entity);
-        if (expire == null || expire <= entity.level().getGameTime()) {
+        if (expire == null || expire <= now) {
             clientEventType.remove(entity);
             clientEventExpireTick.remove(entity);
             return -1;
@@ -446,6 +518,8 @@ public class DamageAdaptation {
             long expireTick = entity.level().getGameTime() + 10; // 持续10刻
             clientEventExpireTick.put(entity, expireTick);
             clientEventType.put(entity, eventType);
+            CLIENT_EVENT_BY_KEY.put(eventKey(entity), eventType);
+            CLIENT_EVENT_EXPIRE_BY_KEY.put(eventKey(entity), expireTick);
         }
     }
 
