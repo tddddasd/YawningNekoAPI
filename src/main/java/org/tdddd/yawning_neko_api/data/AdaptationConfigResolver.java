@@ -114,4 +114,22 @@ public class AdaptationConfigResolver {
             }
         }
     }
+
+    /** Display helper: base layer + rule layer minimum kill count (the upper bound). */
+    public static int resolveMinimumKillCountUpperBound(net.minecraft.world.entity.LivingEntity entity) {
+        net.minecraft.resources.Identifier entityId =
+                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        DamageAdaptationConfig base = null;
+        if (entityId != null) {
+            net.minecraft.resources.Identifier mapped = EntityAdaptationMapping.getConfigForEntity(entityId);
+            net.minecraft.resources.Identifier baseId = mapped != null ? mapped : entityId;
+            base = DamageAdaptationManager.getDirectConfig(baseId);
+        }
+        net.minecraft.resources.Identifier ruleId =
+                AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
+        DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
+        int baseCount = base == null ? 0 : base.getMinimumKillCount();
+        int ruleCount = rule == null ? 0 : rule.getMinimumKillCount();
+        return baseCount + ruleCount;
+    }
 }
