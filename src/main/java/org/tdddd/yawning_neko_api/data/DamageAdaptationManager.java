@@ -20,6 +20,7 @@ public class DamageAdaptationManager implements ResourceManagerReloadListener {
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         CONFIGS.clear();
+        AdaptationColorConfig.reload(resourceManager);
         resourceManager.listResources("damage_adaptation_configs",
                         file -> file.getPath().endsWith(".json"))
                 .forEach((resourceLocation, resource) -> {

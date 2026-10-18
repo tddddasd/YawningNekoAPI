@@ -422,6 +422,25 @@ public class DamageAdaptation {
         return 0;
     }
 
+    /**
+     * Unambiguous client-side query for the renderer: -1 means no adaptation event is active,
+     * 0 is a partial adaptation and 1 a full one. {@link #getLastAdaptationEventType} cannot be
+     * used for this because it falls back to 0, which is also the partial-adaptation code.
+     */
+    public static int getActiveAdaptationEvent(LivingEntity entity) {
+        if (!entity.level().isClientSide) {
+            return -1;
+        }
+        Long expire = clientEventExpireTick.get(entity);
+        if (expire == null || expire <= entity.level().getGameTime()) {
+            clientEventType.remove(entity);
+            clientEventExpireTick.remove(entity);
+            return -1;
+        }
+        Integer type = clientEventType.get(entity);
+        return type == null ? -1 : type;
+    }
+
     public static void updateClientAdaptationEvent(LivingEntity entity, int eventType) {
         if (entity.level().isClientSide) {
             long expireTick = entity.level().getGameTime() + 10; // 持续10刻
