@@ -44,7 +44,12 @@ public class AdaptationEventSyncPacket implements CustomPacketPayload {
 
     public void handle(IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            Entity entity = ctx.player().level().getEntity(entityId);
+            // No Minecraft reference here on purpose: this class must stay loadable on a dedicated
+            // server. ctx.player() is the local player on the client, which is the only side that
+            // receives this packet.
+            net.minecraft.world.level.Level level = ctx.player() == null ? null : ctx.player().level();
+            DamageAdaptation.updateClientAdaptationEventById(entityId, eventType, level);
+            Entity entity = level == null ? null : level.getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 DamageAdaptation.updateClientAdaptationEvent(living, eventType);
             }

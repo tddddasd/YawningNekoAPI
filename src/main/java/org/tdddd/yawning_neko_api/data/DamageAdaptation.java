@@ -48,6 +48,76 @@ public class DamageAdaptation {
     private static final WeakHashMap<LivingEntity, Long> clientEventExpireTick = new WeakHashMap<>();
     private static final WeakHashMap<LivingEntity, Integer> clientEventType = new WeakHashMap<>();
 
+    /** Keyed copies: the packet can record an event before the client entity exists or is replaced. */
+    private static final Map<String, Integer> CLIENT_EVENT_BY_KEY = new HashMap<>();
+    private static final Map<String, Long> CLIENT_EVENT_EXPIRE_BY_KEY = new HashMap<>();
+    private static final Map<Integer, Integer> CLIENT_EVENT_BY_ID = new HashMap<>();
+    private static final Map<Integer, Long> CLIENT_EVENT_EXPIRE_BY_ID = new HashMap<>();
+    private static net.minecraft.world.level.Level lastClientEventLevel;
+
+    private static void ensureSameLevel(net.minecraft.world.level.Level level) {
+        if (level != lastClientEventLevel) {
+            lastClientEventLevel = level;
+            CLIENT_EVENT_BY_KEY.clear();
+            CLIENT_EVENT_EXPIRE_BY_KEY.clear();
+            CLIENT_EVENT_BY_ID.clear();
+            CLIENT_EVENT_EXPIRE_BY_ID.clear();
+            clientEventType.clear();
+            clientEventExpireTick.clear();
+        }
+    }
+
+    private static String eventKey(LivingEntity entity) {
+        return entity.level().dimension().identifier() + "#" + entity.getId();
+    }
+
+    /** Records an event by entity id; works before the client entity is resolvable. */
+    public static void updateClientAdaptationEventById(int entityId, int eventType,
+                                                       net.minecraft.world.level.Level level) {
+        ensureSameLevel(level);
+        long expireTick = (level == null ? 0L : level.getGameTime()) + 10;
+        CLIENT_EVENT_BY_ID.put(entityId, eventType);
+        CLIENT_EVENT_EXPIRE_BY_ID.put(entityId, expireTick);
+        if (level != null) {
+            CLIENT_EVENT_BY_KEY.put(level.dimension().identifier() + "#" + entityId, eventType);
+            CLIENT_EVENT_EXPIRE_BY_KEY.put(level.dimension().identifier() + "#" + entityId, expireTick);
+        }
+    }
+
+    /** -1 = no active event, 0/1 = partial, 2 = full. Reads id-keyed state first. */
+    public static int getActiveAdaptationEvent(LivingEntity entity) {
+        if (entity == null) {
+            return -1;
+        }
+        long now = entity.level().getGameTime();
+        ensureSameLevel(entity.level());
+        Integer byId = CLIENT_EVENT_BY_ID.get(entity.getId());
+        Long byIdExpire = CLIENT_EVENT_EXPIRE_BY_ID.get(entity.getId());
+        if (byId != null && byIdExpire != null && byIdExpire > now) {
+            return byId;
+        }
+        if (byIdExpire != null) {
+            CLIENT_EVENT_BY_ID.remove(entity.getId());
+            CLIENT_EVENT_EXPIRE_BY_ID.remove(entity.getId());
+        }
+        String key = eventKey(entity);
+        Long keyedExpire = CLIENT_EVENT_EXPIRE_BY_KEY.get(key);
+        Integer keyedType = CLIENT_EVENT_BY_KEY.get(key);
+        if (keyedExpire != null && keyedType != null) {
+            if (keyedExpire > now) {
+                return keyedType;
+            }
+            CLIENT_EVENT_EXPIRE_BY_KEY.remove(key);
+            CLIENT_EVENT_BY_KEY.remove(key);
+        }
+        Long expire = clientEventExpireTick.get(entity);
+        Integer type = clientEventType.get(entity);
+        if (expire == null || type == null || expire <= now) {
+            return -1;
+        }
+        return type;
+    }
+
     private static final WeakHashMap<LivingEntity, Integer> clientMaxAdaptations = new WeakHashMap<>();
 
     

@@ -27,25 +27,43 @@ public class AdaptationConfigResolver {
     public static DamageAdaptationConfig getConfig(LivingEntity entity) {
         if (entity.level().isClientSide()) return null;
 
-        Identifier configId = resolveConfigId(entity, entity.level());
-        if (configId == null) return null;
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        Identifier baseId = null;
+        DamageAdaptationConfig base = null;
+        if (entityId != null) {
+            Identifier mapped = EntityAdaptationMapping.getConfigForEntity(entityId);
+            baseId = mapped != null ? mapped : entityId;
+            base = DamageAdaptationManager.getDirectConfig(baseId);
+        }
 
-        DamageAdaptationConfig config = DamageAdaptationManager.getDirectConfig(configId);
-        if (config == null) return null;
+        Identifier ruleId = AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
+        DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
 
-        
-        
+        DamageAdaptationConfig resolved;
+        String signature;
+        if (rule == null) {
+            resolved = base;
+            signature = baseId == null ? null : baseId.toString();
+        } else if (base == null) {
+            resolved = rule;
+            signature = ruleId.toString();
+        } else if (entityId != null && EntityAdaptationMapping.isOverride(entityId)) {
+            resolved = rule;
+            signature = ruleId + "|override|" + baseId;
+        } else {
+            resolved = DamageAdaptationConfig.additive(base, rule);
+            signature = baseId + "|add|" + ruleId;
+        }
+        if (resolved == null || signature == null) return null;
+
         IAdaptationData data = entity.getData(CapabilityEventHandler.ADAPTATION_DATA);
-        String currentRecorded = data.getCurrentConfigId();
-        String newIdStr = configId.toString();
-        if (!newIdStr.equals(currentRecorded)) {
+        if (!signature.equals(data.getCurrentConfigId())) {
             data.clearAdaptations();
             data.setDeathCount(0);
             data.setBrokenAdaptationEndTick(0);
-            data.setCurrentConfigId(newIdStr);
+            data.setCurrentConfigId(signature);
         }
-
-        return config;
+        return resolved;
     }
 
     public static void refreshAllEntitiesConfig() {

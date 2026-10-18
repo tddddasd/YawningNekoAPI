@@ -29,6 +29,9 @@ public class Yawning_neko_api {
         modEventBus.addListener(ModNetwork::register);
         
         NeoForge.EVENT_BUS.register(this);
+        // Registered unconditionally: the suppressor holds no client-only types and returns early on
+        // the server via isClientSide(), so it is safe on a dedicated server too.
+        NeoForge.EVENT_BUS.register(org.tdddd.yawning_neko_api.client.AdaptationHurtFlashSuppressor.class);
         NeoForge.EVENT_BUS.register(new EntityAttackEffectHandler());
     }
 
