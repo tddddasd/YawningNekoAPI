@@ -1,5 +1,6 @@
 package org.tdddd.yawning_neko_api.network.packet;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,7 +30,13 @@ public class AdaptationEventSyncPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            Entity entity = ctx.get().getSender().level().getEntity(entityId);
+            // Client side only: getSender() is null on the client, so the entity has to be resolved
+            // through the client level instead of the (absent) sending player.
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) {
+                return;
+            }
+            Entity entity = mc.level.getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 DamageAdaptation.updateClientAdaptationEvent(living, eventType);
             }

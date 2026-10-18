@@ -19,12 +19,17 @@ import org.tdddd.yawning_neko_api.data.DamageAdaptation;
         bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class AdaptationColorRenderer {
 
+    private static long renderCalls = 0L;
+
     private AdaptationColorRenderer() {
     }
 
     @SubscribeEvent
     public static void onRenderPre(RenderLivingEvent.Pre<?, ?> event) {
         LivingEntity entity = event.getEntity();
+        // Sampled probe: proves the hook fires at all, without flooding the log.
+        if ((++renderCalls % 200L) == 0L) {
+        }
         int eventType = DamageAdaptation.getActiveAdaptationEvent(entity);
         if (eventType < 0 || !AdaptationColorConfig.applies(entity)) {
             return;

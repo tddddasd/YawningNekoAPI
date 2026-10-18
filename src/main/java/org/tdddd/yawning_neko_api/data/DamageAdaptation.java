@@ -237,7 +237,7 @@ public class DamageAdaptation {
         lastAdaptationEventType.put(entity, type);
         lastAdaptationEventTime.put(entity, entity.level().getGameTime());
         if (!entity.level().isClientSide) {
-            ModNetwork.sendToAllTracking(new AdaptationEventSyncPacket(entity.getId(), type), entity);
+        ModNetwork.sendToAllTracking(new AdaptationEventSyncPacket(entity.getId(), type), entity);
         }
     }
 

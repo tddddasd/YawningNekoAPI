@@ -149,6 +149,9 @@ dependencies {
     // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    // compile-only so the api can reference GeckoLib's Color/GeoRenderer types in its mixin;
+    // at runtime the player's own GeckoLib provides them, and @Pseudo tolerates its absence
+    compileOnly files('libs/geckolib-forge-1.20.1-4.8.4.jar')
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

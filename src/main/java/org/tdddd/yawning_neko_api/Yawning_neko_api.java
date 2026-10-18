@@ -24,6 +24,16 @@ public class Yawning_neko_api {
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
         forgeBus.addListener(this::onAddReloadListeners);
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+            forgeBus.addListener(org.tdddd.yawning_neko_api.client.AdaptationHurtFlashSuppressor::onClientTick);
+        }
+        // Registered explicitly instead of relying on @Mod.EventBusSubscriber scanning: the api is
+        // shipped jarJar'd inside epca and the annotation scan did not pick this renderer up
+        // (verified with a log line in onRenderPre that never fired).
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+            forgeBus.addListener(org.tdddd.yawning_neko_api.client.AdaptationColorRenderer::onRenderPre);
+            forgeBus.addListener(org.tdddd.yawning_neko_api.client.AdaptationColorRenderer::onRenderPost);
+        }
         MinecraftForge.EVENT_BUS.register(new EntityAttackEffectHandler());
     }
 

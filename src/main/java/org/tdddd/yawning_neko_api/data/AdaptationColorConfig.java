@@ -105,6 +105,7 @@ public final class AdaptationColorConfig {
         if (eventType < 0) {
             return -1;
         }
-        return eventType == 0 ? partialColor : fullColor;
+        // Wire values are 1 = partial, 2 = full (0 kept for older packets).
+        return (eventType == 0 || eventType == 1) ? partialColor : fullColor;
     }
 }
