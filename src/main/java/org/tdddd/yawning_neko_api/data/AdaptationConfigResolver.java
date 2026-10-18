@@ -118,4 +118,24 @@ public class AdaptationConfigResolver {
             }
         });
     }
+
+    /**
+     * Display helper: the upper bound of the minimum kill count for this entity, i.e. the base layer
+     * plus the rule layer (whichever layers exist). Used by Jade to show "current / upper bound".
+     */
+    public static int resolveMinimumKillCountUpperBound(net.minecraft.world.entity.LivingEntity entity) {
+        net.minecraft.resources.ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+        DamageAdaptationConfig base = null;
+        if (entityId != null) {
+            net.minecraft.resources.ResourceLocation mapped = EntityAdaptationMapping.getConfigForEntity(entityId);
+            net.minecraft.resources.ResourceLocation baseId = mapped != null ? mapped : entityId;
+            base = DamageAdaptationManager.getDirectConfig(baseId);
+        }
+        net.minecraft.resources.ResourceLocation ruleId =
+                AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
+        DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
+        int baseCount = base == null ? 0 : base.getMinimumKillCount();
+        int ruleCount = rule == null ? 0 : rule.getMinimumKillCount();
+        return baseCount + ruleCount;
+    }
 }
