@@ -19,7 +19,7 @@ public class DamageAdaptationConfig {
     private final float adaptationPercentagePerInjury;
     private final int minimumKillDuration;
     private final int minimumAttackInterval;
-    private final int minimumKillCount;
+    private final int minimumBiomassCount;
 
     private final float brokenAdaptationDuration;
 
@@ -30,7 +30,7 @@ public class DamageAdaptationConfig {
     private final float maxMultiplierAbs;
     public DamageAdaptationConfig(Map<Object, Float> damageMultipliers, float adaptationProbability,
                                   int maxAdaptations, float adaptationPercentagePerInjury,
-                                  int minimumKillDuration, int minimumAttackInterval, int minimumKillCount,
+                                  int minimumKillDuration, int minimumAttackInterval, int minimumBiomassCount,
                                   float brokenAdaptationDuration, int maxAdaptableDamageTypes) {
         this.damageMultipliers = damageMultipliers;
         this.adaptationProbability = adaptationProbability;
@@ -38,7 +38,7 @@ public class DamageAdaptationConfig {
         this.adaptationPercentagePerInjury = adaptationPercentagePerInjury;
         this.minimumKillDuration = minimumKillDuration;
         this.minimumAttackInterval = minimumAttackInterval;
-        this.minimumKillCount = minimumKillCount;
+        this.minimumBiomassCount = minimumBiomassCount;
         this.brokenAdaptationDuration = brokenAdaptationDuration;
         this.maxAdaptableDamageTypes = maxAdaptableDamageTypes;
 
@@ -72,7 +72,7 @@ public class DamageAdaptationConfig {
                 overlay.adaptationPercentagePerInjury,
                 overlay.minimumKillDuration,
                 overlay.minimumAttackInterval,
-                overlay.minimumKillCount,
+                overlay.minimumBiomassCount,
                 overlay.brokenAdaptationDuration,
                 overlay.maxAdaptableDamageTypes);
     }
@@ -83,7 +83,7 @@ public class DamageAdaptationConfig {
     public float getAdaptationPercentagePerInjury() { return adaptationPercentagePerInjury; }
     public int getMinimumKillDuration() { return minimumKillDuration; }
     public int getMinimumAttackInterval() { return minimumAttackInterval; }
-    public int getMinimumKillCount() { return minimumKillCount; }
+    public int getMinimumBiomassCount() { return minimumBiomassCount; }
 
     public float getBrokenAdaptationDuration() { return brokenAdaptationDuration; }
     public float getMaxMultiplierAbs() { return maxMultiplierAbs; }
@@ -136,9 +136,9 @@ public class DamageAdaptationConfig {
         float percentage = adaptabilityObj.get("adaptation_percentage_per_injury").getAsFloat();
         int killDuration = adaptabilityObj.get("minimum_kill_duration").getAsInt();
         int attackInterval = adaptabilityObj.get("minimum_attack_interval").getAsInt();
-        int killCount = 0;
+        int biomassCount = 0;
         if (adaptabilityObj.has("minimum_kill_count")) {
-            killCount = adaptabilityObj.get("minimum_kill_count").getAsInt();
+            biomassCount = adaptabilityObj.get("minimum_kill_count").getAsInt();
         }
 
         float brokenAdaptationDuration = 3.0f;
@@ -152,7 +152,7 @@ public class DamageAdaptationConfig {
         }
 
         return new DamageAdaptationConfig(damageMultipliers, probability, times,
-                percentage, killDuration, attackInterval, killCount,
+                percentage, killDuration, attackInterval, biomassCount,
                 brokenAdaptationDuration, maxAdaptableDamageTypes);
     }
 }
