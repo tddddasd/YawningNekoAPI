@@ -116,7 +116,7 @@ public class AdaptationConfigResolver {
     }
 
     /** Display helper: base layer + rule layer minimum kill count (the upper bound). */
-    public static int resolveMinimumBiomassCountUpperBound(net.minecraft.world.entity.LivingEntity entity) {
+    public static int resolveMinimumKillCountUpperBound(net.minecraft.world.entity.LivingEntity entity) {
         net.minecraft.resources.Identifier entityId =
                 net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         DamageAdaptationConfig base = null;
@@ -129,6 +129,6 @@ public class AdaptationConfigResolver {
                 AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
         DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
         // The upper bound is the base value from the json (the rule layer is not added in).
-        return base == null ? 0 : base.getMinimumBiomassCount();
+        return base == null ? 0 : base.getMinimumKillCount();
     }
 }
