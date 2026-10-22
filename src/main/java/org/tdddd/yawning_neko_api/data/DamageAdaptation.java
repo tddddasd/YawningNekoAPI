@@ -363,7 +363,7 @@ public class DamageAdaptation {
         DamageAdaptationConfig config = getEntityConfig(entity);
         if (config == null) return;
 
-        int minKills = config.getMinimumBiomassCount();
+        int minKills = config.getMinimumKillCount();
         if (minKills <= 0) return;
 
         IAdaptationData data = entity.getCapability(IAdaptationData.CAPABILITY).orElse(null);
