@@ -188,16 +188,6 @@ public class DamageAdaptation {
         return remaining / 20.0f;
     }
 
-    public static int getDeathCount(LivingEntity entity) {
-        IAdaptationData data = attachmentData(entity);
-        return data == null ? 0 : data.getDeathCount();
-    }
-
-    public static void recordDeath(LivingEntity entity) {
-        IAdaptationData data = attachmentData(entity);
-        if (data != null) data.incrementDeathCount();
-    }
-
     private static float getDamageMultiplier(LivingEntity entity, DamageType damageType) {
         DamageAdaptationConfig config = getEntityConfig(entity);
         if (config == null) return 1.0f;
