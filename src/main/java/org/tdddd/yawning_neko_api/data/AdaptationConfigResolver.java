@@ -59,7 +59,7 @@ public class AdaptationConfigResolver {
         IAdaptationData data = entity.getData(CapabilityEventHandler.ADAPTATION_DATA);
         if (!signature.equals(data.getCurrentConfigId())) {
             data.clearAdaptations();
-            data.setDeathCount(0);
+            // deathCount is the fake-death counter; switching config must not wipe it.
             data.setBrokenAdaptationEndTick(0);
             data.setCurrentConfigId(signature);
         }
@@ -97,7 +97,7 @@ public class AdaptationConfigResolver {
 
         if (!newConfigIdStr.equals(oldConfigId)) {
             data.clearAdaptations();
-            data.setDeathCount(0);
+            // deathCount is the fake-death counter; switching config must not wipe it.
             data.setBrokenAdaptationEndTick(0);
             data.setCurrentConfigId(newConfigIdStr);
             data.setMaxAdaptations(newConfig.getMaxAdaptations());
@@ -115,20 +115,4 @@ public class AdaptationConfigResolver {
         }
     }
 
-    /** Display helper: base layer + rule layer minimum kill count (the upper bound). */
-    public static int resolveMinimumKillCountUpperBound(net.minecraft.world.entity.LivingEntity entity) {
-        net.minecraft.resources.Identifier entityId =
-                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-        DamageAdaptationConfig base = null;
-        if (entityId != null) {
-            net.minecraft.resources.Identifier mapped = EntityAdaptationMapping.getConfigForEntity(entityId);
-            net.minecraft.resources.Identifier baseId = mapped != null ? mapped : entityId;
-            base = DamageAdaptationManager.getDirectConfig(baseId);
-        }
-        net.minecraft.resources.Identifier ruleId =
-                AdaptationPriorityRuleLoader.resolveConfigId(entity, entity.level());
-        DamageAdaptationConfig rule = ruleId == null ? null : DamageAdaptationManager.getDirectConfig(ruleId);
-        // The upper bound is the base value from the json (the rule layer is not added in).
-        return base == null ? 0 : base.getMinimumKillCount();
-    }
 }

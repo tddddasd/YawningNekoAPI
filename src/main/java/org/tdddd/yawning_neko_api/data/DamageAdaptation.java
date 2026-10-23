@@ -389,48 +389,6 @@ public class DamageAdaptation {
         }
     }
 
-    @SubscribeEvent
-    public static void onLivingDeath(LivingDeathEvent event) {
-        LivingEntity entity = event.getEntity();
-        DamageAdaptationConfig config = getEntityConfig(entity);
-        if (config == null) return;
-
-        int minKills = config.getMinimumKillCount();
-        if (minKills <= 0) return;
-
-        IAdaptationData data = attachmentData(entity);
-        if (data == null) return;
-
-        int currentDeaths = data.getDeathCount();
-        currentDeaths++;
-        data.setDeathCount(currentDeaths);
-        long currentTime = entity.level().getGameTime();
-
-        if (currentDeaths < minKills) {
-            event.setCanceled(true);
-            entity.setHealth(entity.getMaxHealth());
-            spawnTimeMap.put(entity, currentTime);
-
-            
-            if (!entity.level().isClientSide() && entity.level() instanceof ServerLevel serverLevel) {
-                RandomSource random = entity.getRandom();
-                int count = 7 + random.nextInt(6);
-                AABB bb = entity.getBoundingBox();
-                for (int i = 0; i < count; i++) {
-                    double x = bb.minX + random.nextDouble() * (bb.maxX - bb.minX);
-                    double y = bb.minY + random.nextDouble() * (bb.maxY - bb.minY);
-                    double z = bb.minZ + random.nextDouble() * (bb.maxZ - bb.minZ);
-                    
-                    
-                    DustParticleOptions dust = new DustParticleOptions(0x33FF33, 1.0F);
-                    serverLevel.sendParticles(dust, x, y, z, 1, 0, 0, 0, 0.1);
-                }
-            }
-        } else {
-            data.setDeathCount(0);
-            spawnTimeMap.remove(entity);
-        }
-    }
 
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
