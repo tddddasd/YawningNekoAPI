@@ -1,0 +1,4 @@
+{
+  "_comment": "Health lost through setHealth is multiplied by the value: 1.0 unchanged, 0.0 immune, 2.0 double. Only reductions are scaled.",
+  "minecraft:zombie": 1.0
+}

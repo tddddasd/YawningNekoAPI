@@ -508,5 +508,6 @@ public class DamageAdaptation {
         event.addListener(new DamageAdaptationManager());
         event.addListener(new EntityAdaptationMapping());
         event.addListener(new AdaptationPriorityRuleLoader());
+        event.addListener(new MinDamageResistanceLoader());
     }
 }
