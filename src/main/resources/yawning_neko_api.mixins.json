@@ -3,7 +3,8 @@
   "minVersion": "0.8",
   "package": "org.tdddd.yawning_neko_api.mixin",
   "mixins": [
-    "LivingEntityMixin"
+    "LivingEntityMixin",
+    "LivingEntitySetHealthMixin"
   ],
   "client": [],
   "injectors": {

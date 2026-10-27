@@ -42,6 +42,8 @@ public class Yawning_neko_api {
     @SubscribeEvent
     public void onAddReloadListeners(AddServerReloadListenersEvent event) {
         event.addListener(Identifier.fromNamespaceAndPath(MODID, "minimum_damage"), MIN_DAMAGE_MANAGER);
+        event.addListener(Identifier.fromNamespaceAndPath(MODID, "min_damage_resistance"),
+                new org.tdddd.yawning_neko_api.data.MinDamageResistanceLoader());
         event.addListener(Identifier.fromNamespaceAndPath(MODID, "entity_attack_effects"), new EntityAttackEffectManager());
         event.addListener(Identifier.fromNamespaceAndPath(MODID, "entity_effect_upgrades"), new EntityUpgradeManager());
         event.addListener(Identifier.fromNamespaceAndPath(MODID, "entity_immunity_effects"), new EntityImmunityEffectManager());
